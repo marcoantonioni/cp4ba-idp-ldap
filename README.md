@@ -8,7 +8,7 @@ Utilities for LDAP and IDP configuration in Cloud Pak with Foundational services
 ++++++++++++++++++++++++++++++++++++++++++++++++
 <br>
 <i>
-This software and the configurations contained in the repository should be considered as examples for educational purposes.
+This software and the configurations contained in the repository MUST be considered as examples for educational purposes.
 <br>
 An LDAP deployed within the cluster is used, the OpenLDAP image is provided by the IBM registry 'cp.icr.io'.
 <br>
