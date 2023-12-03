@@ -3,14 +3,11 @@
 #-------------------------------
 # read installation parameters
 PROPS_FILE=""
-#IDP_UID=""
 FORCE_INST=false
-CHECK_PARAMS=false
 
-while getopts p:c:f flag
+while getopts p:f flag
 do
     case "${flag}" in
-        c) CHECK_PARAMS=true;;
         f) FORCE_INST=true;;
         p) PROPS_FILE=${OPTARG};;
     esac
@@ -91,14 +88,6 @@ configSCIM () {
 
 }
 
-# ?????
-updateIdp () {
-  echo "Updating "${IDP_NAME}
-  RESPONSE=$(curl -sk -X PUT "${CONSOLE_HOST}/idprovider/v3/auth/idsource/${IDP_NAME}" \
-              -H "Authorization: Bearer ${IAM_ACCESS_TK}" -H 'Content-Type: application/json' -d @./${IDP_NAME}.json | jq .)
-  echo ${RESPONSE} | jq .
-}
-
 #-------------------------------
 # create new IDP
 createIdp () {
@@ -139,13 +128,17 @@ getUID () {
 deleteIDP () {
   IDP_UID=$(getUID)
 
-  RESPONSE=$(curl -sk -X DELETE "${CONSOLE_HOST}/idprovider/v3/auth/idsource/"${IDP_UID} -H "Authorization: Bearer ${IAM_ACCESS_TK}")
-  if [[ "${RESPONSE}" == *"success"* ]]; then
-    echo "Deleted IDP "${IDP_NAME}" / "${IDP_UID}
+  if [[ -z "${IDP_UID}" ]]; then
+    echo "IDP "${IDP_NAME}" not found in namespace "${TNS}
   else
-    echo "ERROR deleting ${IDP_NAME}"
-    echo ${RESPONSE} | jq .
-    exit
+    RESPONSE=$(curl -sk -X DELETE "${CONSOLE_HOST}/idprovider/v3/auth/idsource/"${IDP_UID} -H "Authorization: Bearer ${IAM_ACCESS_TK}")
+    if [[ "${RESPONSE}" == *"success"* ]]; then
+      echo "Deleted IDP "${IDP_NAME}" / "${IDP_UID}
+    else
+      echo "ERROR deleting ${IDP_NAME}"
+      echo ${RESPONSE} | jq .
+      exit
+    fi
   fi
 }
 

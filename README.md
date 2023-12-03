@@ -82,14 +82,14 @@ LDAP_PAGING_SIZE="1000"
 # install openldap deployment and wait for pod ready
 ./scripts/add-ldap.sh -p ./configs/_cfg1-ldap-domain.properties
 
-# install phpadmin tool, use TLS cert from secret 'icp4adeploy-root-ca' in namespace 'cp4ba'
+# [optional] install phpadmin tool, use TLS cert from secret 'icp4adeploy-root-ca' in namespace 'cp4ba'
 ./scripts/add-phpadmin.sh -p ./configs/_cfg1-ldap-domain.properties -s icp4adeploy-root-ca -w common-web-ui-cert -n cp4ba
 
 ```
 
 ## IDP installation and configuration
 ```
-./scripts/add-idp.sh -p ./configs/_cfg1-idp.properties -f
+./scripts/add-idp.sh -p ./configs/_cfg1-idp.properties
 ```
 
 
@@ -105,6 +105,6 @@ LDAP_PAGING_SIZE="1000"
 
 ## IDP deletion
 ```
-./scripts/remove-idp.sh -p ./configs/_cfg1-idp.properties -f
+./scripts/remove-idp.sh -p ./configs/_cfg1-idp.properties
 ```
 
