@@ -2,9 +2,9 @@
 
 Utilities for LDAP and IDP configuration in Cloud Pak with Foundational services v4.x
 
----
-<b>WARNING</b>:
 
+<b>**WARNING**</b>:
+++++++++++++++++++++++++++++++++++++++++++++++++
 <i>
 This software and the configurations contained in the repository should be considered as examples for educational purposes.
 
@@ -12,7 +12,8 @@ An LDAP deployed within the cluster is used, the OpenLDAP image is provided by t
 
 Do not use in a production environment without making your own necessary modifications.
 </i>
----
+++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 ## Contents
 
