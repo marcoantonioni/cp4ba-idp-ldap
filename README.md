@@ -6,6 +6,7 @@ Utilities for LDAP and IDP configuration in Cloud Pak with Foundational services
 <b>**WARNING**</b>:
 
 ++++++++++++++++++++++++++++++++++++++++++++++++
+
 <i>
 This software and the configurations contained in the repository should be considered as examples for educational purposes.
 
