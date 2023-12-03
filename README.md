@@ -124,3 +124,6 @@ LDAP_PAGING_SIZE="1000"
 ./scripts/remove-idp.sh -p ./configs/_cfg1-idp.properties
 ```
 
+## References
+
+[IDP provider and LDAP configuration in IBM Cloud Pak foundational services 4.2](https://www.ibm.com/docs/en/cloud-paks/foundational-services/4.2?topic=apis-identity-provider#ldap-configuring)
