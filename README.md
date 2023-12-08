@@ -2,6 +2,8 @@
 
 Utilities for LDAP and IDP configuration in Cloud Pak with Foundational services v4.x
 
+TTD
+- script to remove onboarded users
 
 <b>**WARNING**</b>:
 
@@ -106,6 +108,15 @@ LDAP_PAGING_SIZE="1000"
 ## IDP installation and configuration
 ```
 ./scripts/add-idp.sh -p ./configs/_cfg1-idp.properties
+```
+
+## Users onboarding into Pak environment
+```
+# from ldif secret
+./scripts/onboard-users.sh -p ../configs/_cfg1-ldap-domain.properties -s
+
+# from users file
+./scripts/onboard-users.sh -p ../configs/_cfg1-ldap-domain.properties -u ../configs/file-of-users
 ```
 
 
