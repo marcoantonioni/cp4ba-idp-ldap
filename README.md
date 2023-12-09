@@ -2,8 +2,6 @@
 
 Utilities for LDAP and IDP configuration in Cloud Pak with Foundational services v4.x
 
-TTD
-- script to remove onboarded users
 
 <b>**WARNING**</b>:
 
@@ -95,7 +93,7 @@ LDAP_PAGING_SIZE="1000"
 ```
 
 
-## LDAP installation and configuration
+## LDAP installation and configuration commands
 ```
 # install openldap deployment and wait for pod ready
 ./scripts/add-ldap.sh -p ./configs/_cfg1-ldap-domain.properties
@@ -105,22 +103,29 @@ LDAP_PAGING_SIZE="1000"
 
 ```
 
-## IDP installation and configuration
+## IDP installation and configuration commands
 ```
 ./scripts/add-idp.sh -p ./configs/_cfg1-idp.properties
 ```
 
-## Users onboarding into Pak environment
+## Users onboarding into Pak environment commands
 ```
-# from ldif secret
-./scripts/onboard-users.sh -p ../configs/_cfg1-ldap-domain.properties -s
+# add users (list from ldif secret)
+./scripts/onboard-users.sh -p ../configs/_cfg1-ldap-domain.properties -o add -s
 
-# from users file
-./scripts/onboard-users.sh -p ../configs/_cfg1-ldap-domain.properties -u ../configs/file-of-users
+# add users (list from file)
+./scripts/onboard-users.sh -p ../configs/_cfg1-ldap-domain.properties -o add -u ../configs/file-of-users
+
+
+# remove users from ldif secret
+./scripts/onboard-users.sh -p ../configs/_cfg1-ldap-domain.properties -o remove -s
+
+# remove users from users file
+./scripts/onboard-users.sh -p ../configs/_cfg1-ldap-domain.properties -o remove -u ../configs/file-of-users
 ```
 
 
-## LDAP deletion
+## LDAP deletion commands
 ```
 # remove phpadmin tool
 ./scripts/remove-phpadmin.sh -p ./configs/_cfg1-ldap-domain.properties
@@ -130,7 +135,7 @@ LDAP_PAGING_SIZE="1000"
 
 ```
 
-## IDP deletion
+## IDP deletion commands
 ```
 ./scripts/remove-idp.sh -p ./configs/_cfg1-idp.properties
 ```

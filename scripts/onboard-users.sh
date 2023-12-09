@@ -5,15 +5,28 @@
 PROPS_FILE=""
 USERS_FILE=""
 USERS_SECRET=false
+OPERATION_MODE=""
 
-while getopts p:u:s flag
+while getopts p:u:o:s flag
 do
     case "${flag}" in
         p) PROPS_FILE=${OPTARG};;
         u) USERS_FILE=${OPTARG};;
+        o) OPERATION_MODE=${OPTARG};;
         s) USERS_SECRET=true;;
     esac
 done
+
+resourceExist () {
+#    echo "namespace name: $1"
+#    echo "resource type: $2"
+#    echo "resource name: $3"
+  if [ $(oc get $2 -n $1 $3 2> /dev/null | grep $3 | wc -l) -lt 1 ];
+  then
+      return 0
+  fi
+  return 1
+}
 
 #-------------------------------
 # get common values
@@ -49,29 +62,48 @@ LIST_OF_RECORDS=""
 
 #-------------------------------
 loadUsersFromSecret () {
-
-  LIST_OF_USERS=$(oc get secrets -n ${TNS} ${LDAP_DOMAIN}-customldif -o jsonpath='{.data.ldap_user\.ldif}' | base64 -d | grep "uid:" | sed 's/uid: //g')
-  echo $LIST_OF_USERS > ./out.txt
-  sed 's/ /+/g' -i out.txt
-  LIST_OF_USERS=$(cat out.txt)
-  rm out.txt
+  echo "Loading users from secret '${LDAP_DOMAIN}-customldif'"
+  resourceExist ${TNS} "secret" ${LDAP_DOMAIN}-customldif
+  if [ $? -eq 1 ]; then
+    LIST_OF_USERS=$(oc get secrets -n ${TNS} ${LDAP_DOMAIN}-customldif -o jsonpath='{.data.ldap_user\.ldif}' | base64 -d | grep "uid:" | sed 's/uid: //g')
+    _FNAME="tmp-file-users"
+    echo $LIST_OF_USERS > ${_FNAME}
+    sed 's/ /+/g' -i ${_FNAME}
+    LIST_OF_USERS=$(cat ${_FNAME})
+    rm ${_FNAME} 2>/dev/null
+  else
+    echo "ERROR: secret '${LDAP_DOMAIN}-customldif' not found in namespace '${TNS}'"
+    exit 1
+  fi
 }
 
 #-------------------------------
 loadUsersFromFile () {
-  LIST_OF_USERS=$(cat $1)
-  echo $LIST_OF_USERS > ./out.txt
-  sed 's/ /+/g' -i out.txt
-  LIST_OF_USERS=$(cat out.txt)
-  rm out.txt
+  echo "Loading users from file '$1'"
+
+  if [[ -f $1 ]];
+  then
+    _FNAME="tmp-file-users"
+    LIST_OF_USERS=$(cat $1)
+    echo $LIST_OF_USERS > ${_FNAME}
+    sed 's/ /+/g' -i ${_FNAME}
+    LIST_OF_USERS=$(cat ${_FNAME})
+    rm ${_FNAME} 2>/dev/null
+
+  else
+      echo "ERROR: Users file "$1" not found !!!"
+      exit 1
+  fi
+
 }
 
 #-------------------------------
-# onboard users
+# onboard users add
 
-onboardUsers () {
+onboardUsersAdd () {
 
   IFS="+" read -ra ALL_USERS <<< "$LIST_OF_USERS"  
+  tot_users=${#ALL_USERS[@]}
   UPDATED_LIST=""
 
   for _USR in "${ALL_USERS[@]}";
@@ -83,20 +115,52 @@ onboardUsers () {
   LIST_OF_RECORDS=$( echo ${UPDATED_LIST} | sed 's/.$//g')
 
   if [[ ! -z "${LIST_OF_RECORDS}" ]]; then
+    echo "Adding $tot_users users..."
+
     _DATA='['${LIST_OF_RECORDS}']'
     RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -H 'Content-Type: application/json' \
                  -d $_DATA -X POST "${PAK_HOST}/usermgmt/v1/user/bulk")
 
     if [[ "${RESPONSE}" == *"error"* ]]; then
-      echo "ERROR onboarding users"
+      echo "ERROR adding users"
       echo "${RESPONSE}"
-      exit
+      exit 1
     else
-      echo $(echo $RESPONSE | jq '.result | length')" Users onboarded."
+      echo $(echo $RESPONSE | jq '.result | length')" Users operated in mode 'add'"
     fi
   else
-    echo "No users to be onboarded."
+    echo "No users to add."
   fi
+}
+
+
+#-------------------------------
+# onboard users remove
+
+onboardUsersRemove () {
+  IFS="+" read -ra ALL_USERS <<< "$LIST_OF_USERS"
+
+  tot_users=${#ALL_USERS[@]}
+
+  if [[ $tot_users -gt 0 ]]; then
+    echo "Removing $tot_users users..."
+
+    for _USR in "${ALL_USERS[@]}";
+    do
+      RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' \
+                  -X DELETE "${PAK_HOST}/usermgmt/v1/user/${_USR}")
+      if [[ "${RESPONSE}" == *"exception"* ]]; then
+        echo "ERROR removing user '${_USR}' message: "$(echo "${RESPONSE}" | jq .exception)
+        tot_users=$((tot_users-1))      
+      fi
+
+    done
+    echo "$tot_users Users operated in mode 'remove'"
+
+  else
+    echo "No users to remove."
+  fi
+
 }
 
 #-------------------------------
@@ -106,18 +170,30 @@ then
     source ${PROPS_FILE}
 else
     echo "ERROR: Properties file "${PROPS_FILE}" not found !!!"
-    exit
+    exit 1
 fi
 
 echo "======================================================================"
-echo "Onboarding users from domain ["${LDAP_DOMAIN}"] for namespace ["${TNS}"]"
+echo "Onboard users from domain ["${LDAP_DOMAIN}"] for namespace ["${TNS}"]"
 echo "======================================================================"
 echo ""
 
-getCommonValues
-if [[ "${USERS_SECRET}" = "true" ]]; then
-  loadUsersFromSecret
+if [[ "${OPERATION_MODE}" = "add" ]] || [[ "${OPERATION_MODE}" = "remove" ]]; then
+  getCommonValues
+  if [[ "${USERS_SECRET}" = "true" ]]; then
+    loadUsersFromSecret
+  else
+    loadUsersFromFile ${USERS_FILE}
+  fi
+
+  _OPERATION="POST"
+  if [[ "${OPERATION_MODE}" = "add" ]]; then
+    onboardUsersAdd
+  else
+    onboardUsersRemove
+  fi 
+  exit 0
 else
-  loadUsersFromFile ${USERS_FILE}
+  echo "ERROR, set operation mode using -o [add|remove]"
+  exit 1
 fi
-onboardUsers
