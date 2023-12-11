@@ -111,17 +111,17 @@ LDAP_PAGING_SIZE="1000"
 ## Users onboarding into Pak environment commands
 ```
 # add users (list from ldif secret)
-./scripts/onboard-users.sh -p ../configs/_cfg1-ldap-domain.properties -o add -s
+./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -o add -s
 
 # add users (list from file)
-./scripts/onboard-users.sh -p ../configs/_cfg1-ldap-domain.properties -o add -u ../configs/file-of-users
+./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -o add -u ../configs/file-of-users
 
 
 # remove users from ldif secret
-./scripts/onboard-users.sh -p ../configs/_cfg1-ldap-domain.properties -o remove -s
+./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -o remove -s
 
 # remove users from users file
-./scripts/onboard-users.sh -p ../configs/_cfg1-ldap-domain.properties -o remove -u ../configs/file-of-users
+./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -o remove -u ../configs/file-of-users
 ```
 
 
