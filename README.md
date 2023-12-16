@@ -1,6 +1,6 @@
 # cp4ba-idp-ldap
 
-Utilities for LDAP and IDP configuration in Cloud Pak with Foundational services v4.x
+This repository contains a series of examples and tools for creating and configuring a containerized LDAP server and configuring federated IDP in a IBM Cloud Pak deployed using Foundational services v4.x
 
 
 <b>**WARNING**</b>:
@@ -94,6 +94,11 @@ LDAP_PAGING_SIZE="1000"
 
 
 ## LDAP installation and configuration commands
+
+
+<b>WARNING</b>: before run any command please update configuration files with your values
+
+
 ```
 # install openldap deployment and wait for pod ready
 ./scripts/add-ldap.sh -p ./configs/_cfg1-ldap-domain.properties
