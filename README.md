@@ -143,3 +143,5 @@ LDAP_PAGING_SIZE="1000"
 ## References
 
 [IDP provider and LDAP configuration in IBM Cloud Pak foundational services 4.2](https://www.ibm.com/docs/en/cloud-paks/foundational-services/4.2?topic=apis-identity-provider#ldap-configuring)
+
+[Identity Provider APIs 4.3](https://www.ibm.com/docs/en/cloud-paks/foundational-services/4.3?topic=apis-identity-provider)
