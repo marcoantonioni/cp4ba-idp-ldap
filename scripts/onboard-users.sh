@@ -29,8 +29,32 @@ resourceExist () {
 }
 
 #-------------------------------
+waitForResourceCreated () {
+#    echo "namespace name: $1"
+#    echo "resource type: $2"
+#    echo "resource name: $3"
+#    echo "time to wait: $4"
+
+  echo -n "Wait for resource '$3' in namespace '$1' created"
+  while [ true ]
+  do
+      resourceExist $1 $2 $3
+      if [ $? -eq 0 ]; then
+          echo -n "."
+          sleep $4
+      else
+          echo ""
+          break
+      fi
+  done
+}
+
+#-------------------------------
 # get common values
 getCommonValues () {
+
+  waitForResourceCreated ${TNS} "secret" "platform-auth-idp-credentials" 10
+  waitForResourceCreated ${TNS} "route" "cpd" 10
 
   # get pak admin username / password
   ADMIN_USERNAME=$(oc get secret platform-auth-idp-credentials -n ${TNS} -o jsonpath='{.data.admin_username}' | base64 -d)
@@ -126,7 +150,14 @@ onboardUsersAdd () {
       echo "${RESPONSE}"
       exit 1
     else
-      echo $(echo $RESPONSE | jq '.result | length')" Users operated in mode 'add'"
+      RES=$(echo $RESPONSE | jq ._messageCode_ | sed 's/"//g')
+      if [[ "${RES}" = "Success" ]]; then
+        echo $(echo $RESPONSE | jq '.result | length')" Users operated in mode 'add'"
+      else
+        MSG=$(echo $RESPONSE | jq .message | sed 's/"//g')
+        echo "ERROR: "${RES}" - "${MSG}
+        echo $RESPONSE
+      fi
     fi
   else
     echo "No users to add."

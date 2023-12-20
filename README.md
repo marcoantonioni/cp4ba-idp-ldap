@@ -103,8 +103,15 @@ LDAP_PAGING_SIZE="1000"
 # install openldap deployment and wait for pod ready
 ./scripts/add-ldap.sh -p ./configs/_cfg1-ldap-domain.properties
 
+./scripts/add-ldap.sh -p ./configs/_cfg-production-ldap-domain.properties
+
 # [optional] install phpadmin tool, use TLS cert from secret 'icp4adeploy-root-ca' in namespace 'cp4ba'
-./scripts/add-phpadmin.sh -p ./configs/_cfg1-ldap-domain.properties -s icp4adeploy-root-ca -w common-web-ui-cert -n cp4ba
+
+./scripts/add-phpadmin.sh -p ./configs/_cfg1-ldap-domain.properties -s common-web-ui-cert -w common-web-ui-cert -n cp4ba
+
+./scripts/add-phpadmin.sh -p ./configs/_cfg-production-ldap-domain.properties -s common-web-ui-cert -w common-web-ui-cert -n cp4ba-federated-wfps
+
+# NO ./scripts/add-phpadmin.sh -p ./configs/_cfg1-ldap-domain.properties -s icp4adeploy-root-ca -w common-web-ui-cert -n cp4ba
 
 ```
 
