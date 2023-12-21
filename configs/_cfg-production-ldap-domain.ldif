@@ -30,6 +30,21 @@ gidNumber: 5555
 homeDirectory: /home/banadmin/
 mail: banadmin@vuxprod.net
 
+dn: uid=p8admin,dc=vuxprod,dc=net
+uid: p8admin
+cn: p8admin
+sn: p8admin
+userpassword: dem0s
+objectClass: top
+objectClass: posixAccount
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: person
+uidNumber: 12340503
+gidNumber: 5555
+homeDirectory: /home/p8admin/
+mail: p8admin@vuxprod.net
+
 dn: uid=vuxuser1,dc=vuxprod,dc=net
 uid: vuxuser1
 cn: vuxuser1
@@ -186,6 +201,7 @@ objectClass: top
 cn: AllUsers
 member: uid=cp4admin,dc=vuxprod,dc=net
 member: uid=banadmin,dc=vuxprod,dc=net
+member: uid=p8admin,dc=vuxprod,dc=net
 member: uid=vuxuser1,dc=vuxprod,dc=net
 member: uid=vuxuser2,dc=vuxprod,dc=net
 member: uid=vuxuser3,dc=vuxprod,dc=net
@@ -203,6 +219,7 @@ objectClass: top
 cn: AdminsGroup
 member: uid=cp4admin,dc=vuxprod,dc=net
 member: uid=banadmin,dc=vuxprod,dc=net
+member: uid=p8admin,dc=vuxprod,dc=net
 
 dn: cn=Group1,dc=vuxprod,dc=net
 objectClass: groupOfNames
