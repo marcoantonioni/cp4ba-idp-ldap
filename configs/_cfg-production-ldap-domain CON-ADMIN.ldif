@@ -1,5 +1,50 @@
 version: 1
 
+dn: uid=cp4admin,dc=vuxprod,dc=net
+uid: cp4admin
+cn: cp4admin
+sn: cp4admin
+userpassword: dem0s
+objectClass: top
+objectClass: posixAccount
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: person
+uidNumber: 12340501
+gidNumber: 5555
+homeDirectory: /home/cp4admin/
+mail: cp4admin@vuxprod.net
+
+dn: uid=banadmin,dc=vuxprod,dc=net
+uid: banadmin
+cn: banadmin
+sn: banadmin
+userpassword: dem0s
+objectClass: top
+objectClass: posixAccount
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: person
+uidNumber: 12340502
+gidNumber: 5555
+homeDirectory: /home/banadmin/
+mail: banadmin@vuxprod.net
+
+dn: uid=p8admin,dc=vuxprod,dc=net
+uid: p8admin
+cn: p8admin
+sn: p8admin
+userpassword: dem0s
+objectClass: top
+objectClass: posixAccount
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: person
+uidNumber: 12340503
+gidNumber: 5555
+homeDirectory: /home/p8admin/
+mail: p8admin@vuxprod.net
+
 dn: uid=vuxuser1,dc=vuxprod,dc=net
 uid: vuxuser1
 cn: vuxuser1
@@ -154,6 +199,9 @@ dn: cn=AllUsers,dc=vuxprod,dc=net
 objectClass: groupOfNames
 objectClass: top
 cn: AllUsers
+member: uid=cp4admin,dc=vuxprod,dc=net
+member: uid=banadmin,dc=vuxprod,dc=net
+member: uid=p8admin,dc=vuxprod,dc=net
 member: uid=vuxuser1,dc=vuxprod,dc=net
 member: uid=vuxuser2,dc=vuxprod,dc=net
 member: uid=vuxuser3,dc=vuxprod,dc=net
@@ -164,6 +212,14 @@ member: uid=vuxuser7,dc=vuxprod,dc=net
 member: uid=vuxuser8,dc=vuxprod,dc=net
 member: uid=vuxuser9,dc=vuxprod,dc=net
 member: uid=vuxuser10,dc=vuxprod,dc=net
+
+dn: cn=AdminsGroup,dc=vuxprod,dc=net
+objectClass: groupOfNames
+objectClass: top
+cn: AdminsGroup
+member: uid=cp4admin,dc=vuxprod,dc=net
+member: uid=banadmin,dc=vuxprod,dc=net
+member: uid=p8admin,dc=vuxprod,dc=net
 
 dn: cn=Group1,dc=vuxprod,dc=net
 objectClass: groupOfNames
