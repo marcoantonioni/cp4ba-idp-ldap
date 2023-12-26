@@ -220,7 +220,7 @@ echo "=============================================================="
 echo "Onboard users from domain ["${LDAP_DOMAIN}"] for namespace ["${TNS}"]"
 echo "=============================================================="
 
-if [[ "${OPERATION_MODE}" = "add" ]] || [[ "${OPERATION_MODE}" = "remove" ]]; then
+if [[ "${OPERATION_MODE}" = "add" ]] || [[ "${OPERATION_MODE}" = "remove" ]] || [[ "${OPERATION_MODE}" = "remove-and-add" ]]; then
   getCommonValues
   if [[ "${USERS_SECRET}" = "true" ]]; then
     loadUsersFromSecret
