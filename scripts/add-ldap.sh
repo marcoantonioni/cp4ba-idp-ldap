@@ -1,5 +1,12 @@
 #!/bin/bash
 
+#--------------------------------------------------------
+_CLR_RED="\033[0;31m"   #'0;31' is Red's ANSI color code
+_CLR_GREEN="\033[0;32m"   #'0;32' is Green's ANSI color code
+_CLR_YELLOW="\033[1;32m"   #'1;32' is Yellow's ANSI color code
+_CLR_BLUE="\033[0;34m"   #'0;34' is Blue's ANSI color code
+_CLR_NC="\033[0m"
+
 #-------------------------------
 # read installation parameters
 PROPS_FILE=""
@@ -60,20 +67,20 @@ fi
 checkParams() {
 
 if [ -f "${LDAP_LDIF_NAME}" ]; then
-  echo "LDIF file is here"
+  echo "Using LDIF ${LDAP_LDIF_NAME}"
 else
-  echo "ERROR: file '${LDAP_LDIF_NAME}' must be here"
-  exit
+  echo "ERROR: file '${LDAP_LDIF_NAME}' not found."
+  exit 1
 fi
 
 if [ -z "${TNS}" ]; then
     echo "ERROR: TNS, namespace not set"
-    exit
+    exit 1
 fi
 
 if [ -z "${ENTITLEMENT_KEY}" ]; then
     echo "ERROR: ENTITLEMENT_KEY, key not set"
-    exit
+    exit 1
 fi
 
 }
@@ -363,7 +370,9 @@ else
     exit
 fi
 
-echo "Installing LDAP in namespace "${TNS}
+echo "=============================================================="
+echo -e "${_CLR_GREEN}Installing LDAP in namespace '${_CLR_YELLOW}"${TNS}"${_CLR_GREEN}'${_CLR_NC}"
+echo "=============================================================="
 
 checkParams
 
@@ -381,8 +390,8 @@ waitForDeploymentReady ${TNS} ${LDAP_DOMAIN}-ldap ${WAIT_SECS}
 
 
 LDAP_SVC_NAME=$(oc get services -n ${TNS} | grep ${LDAP_DOMAIN} | awk '{print $1}')
-echo "Your LDAP service url is '"${LDAP_SVC_NAME}.${TNS}.svc.cluster.local"'"
-echo "LDAP service ports"
+echo -e "Your LDAP service url is '${_CLR_YELLOW}"${LDAP_SVC_NAME}.${TNS}.svc.cluster.local${_CLR_NC}"'"
+echo -e "LDAP service ports"
 oc get service -n ${TNS} ${LDAP_SVC_NAME} -o yaml | grep port:
 echo "Possible full address (ports may vary)"
 echo "  ldap://${LDAP_SVC_NAME}.${TNS}.svc.cluster.local:389"
