@@ -348,7 +348,7 @@ waitForDeploymentReady () {
     else
       ((_seconds=_seconds+1))
       echo -e -n "Wait for resource '$2' in namespace '$1' to be READY [$_seconds]\033[0K\r"
-      sleep $3
+      sleep 1
     fi
   done
 }

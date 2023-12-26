@@ -3,14 +3,18 @@
 #-------------------------------
 # read installation parameters
 PROPS_FILE=""
+LDAP_FILE=""
 USERS_FILE=""
 USERS_SECRET=false
 OPERATION_MODE=""
+_TNS=""
 
-while getopts p:u:o:s flag
+while getopts p:l:n:u:o:s flag
 do
     case "${flag}" in
         p) PROPS_FILE=${OPTARG};;
+        l) LDAP_FILE=${OPTARG};;
+        n) _TNS=${OPTARG};;
         u) USERS_FILE=${OPTARG};;
         o) OPERATION_MODE=${OPTARG};;
         s) USERS_SECRET=true;;
@@ -202,6 +206,17 @@ then
 else
     echo "ERROR: Properties file "${PROPS_FILE}" not found !!!"
     exit 1
+fi
+if [[ -f ${LDAP_FILE} ]];
+then
+    source ${LDAP_FILE}
+else
+    echo "ERROR: Properties file "${LDAP_FILE}" not found !!!"
+    exit 1
+fi
+
+if [[ "${_TNS}" != "" ]]; then
+  TNS="${_TNS}"
 fi
 
 echo "======================================================================"
