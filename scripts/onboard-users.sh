@@ -75,14 +75,11 @@ getCommonValues () {
 
   ZEN_TK=$(curl -sk "${PAK_HOST}/v1/preauth/validateAuth" -H "username:${ADMIN_USERNAME}" -H "iam-token: ${IAM_ACCESS_TK}" | jq -r .accessToken)
 
-
   # curl -skH "Authorization: Bearer ${ZEN_TK}" "${PAK_HOST}/usermgmt/v1/users" | jq
 
   echo "Pak console: "${CONSOLE_HOST}
   echo "Pak cpd console: "${PAK_HOST}
   echo "Pak administrator: ${ADMIN_USERNAME} / ${ADMIN_PASSW}"
-
-  echo ""
 }
 
 LIST_OF_USERS=""
@@ -219,10 +216,9 @@ if [[ "${_TNS}" != "" ]]; then
   TNS="${_TNS}"
 fi
 
-echo "======================================================================"
+echo "=============================================================="
 echo "Onboard users from domain ["${LDAP_DOMAIN}"] for namespace ["${TNS}"]"
-echo "======================================================================"
-echo ""
+echo "=============================================================="
 
 if [[ "${OPERATION_MODE}" = "add" ]] || [[ "${OPERATION_MODE}" = "remove" ]]; then
   getCommonValues
