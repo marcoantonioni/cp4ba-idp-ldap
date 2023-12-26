@@ -231,11 +231,16 @@ if [[ "${OPERATION_MODE}" = "add" ]] || [[ "${OPERATION_MODE}" = "remove" ]] || 
   _OPERATION="POST"
   if [[ "${OPERATION_MODE}" = "add" ]]; then
     onboardUsersAdd
-  else
+  fi 
+  if [[ "${OPERATION_MODE}" = "remove" ]]; then
     onboardUsersRemove
+  fi 
+  if [[ "${OPERATION_MODE}" = "remove-and-add" ]]; then
+    onboardUsersRemove
+    onboardUsersAdd
   fi 
   exit 0
 else
-  echo "ERROR, set operation mode using -o [add|remove]"
+  echo "ERROR, set operation mode using -o [add|remove|remove-and-add]"
   exit 1
 fi
