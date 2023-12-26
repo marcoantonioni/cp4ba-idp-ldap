@@ -336,18 +336,21 @@ waitForDeploymentReady () {
 #    echo "resource name: $2"
 #    echo "time to wait: $3"
 
-    while [ true ]
-    do
-        REPLICAS=$(oc get deployment -n $1 $2 -o jsonpath="{.status.replicas}")
-        READY_REPLICAS=$(oc get deployment -n $1 $2 -o jsonpath="{.status.readyReplicas}")
-        if [ "${REPLICAS}" = "${READY_REPLICAS}" ]; then
-            echo "Resource '$2' in namespace '$1' is READY"
-            break
-        else
-            echo "Wait for resource '$2' in namespace '$1' to be READY, sleep $3 seconds"
-            sleep $3
-        fi
-    done
+  _seconds=0
+  while [ true ]
+  do
+    REPLICAS=$(oc get deployment -n $1 $2 -o jsonpath="{.status.replicas}")
+    READY_REPLICAS=$(oc get deployment -n $1 $2 -o jsonpath="{.status.readyReplicas}")
+    if [ "${REPLICAS}" = "${READY_REPLICAS}" ]; then
+      echo ""
+      echo "Resource '$2' in namespace '$1' is READY"
+      break
+    else
+      ((_seconds=_seconds+1))
+      echo -e -n "Wait for resource '$2' in namespace '$1' to be READY [$_seconds]\033[0K\r"
+      sleep $3
+    fi
+  done
 }
 
 #===============================
