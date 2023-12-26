@@ -41,7 +41,7 @@ if [ $? -eq 0 ]; then
   oc create secret docker-registry -n ${TNS} pull-secret \
       --docker-server=cp.icr.io \
       --docker-username=cp \
-      --docker-password="${ENTITLEMENT_KEY}"
+      --docker-password="${ENTITLEMENT_KEY}" 2> /dev/null 1> /dev/null
 
   oc secrets link -n ${TNS} default pull-secret --for=pull
 fi
@@ -51,7 +51,7 @@ if [ $? -eq 0 ]; then
   oc create secret docker-registry -n ${TNS} ibm-entitlement-key \
       --docker-server=cp.icr.io \
       --docker-username=cp \
-      --docker-password="${ENTITLEMENT_KEY}"
+      --docker-password="${ENTITLEMENT_KEY}" 2> /dev/null 1> /dev/null
 fi
 
 }
@@ -82,21 +82,21 @@ fi
 createNamespace() {
    namespaceExist ${TNS}
    if [ $? -eq 0 ]; then
-      oc new-project ${TNS}
+      oc new-project ${TNS} 2> /dev/null 1> /dev/null
    fi
 }
 
 #-------------------------------
 createSecrets() {
-resourceExist secret ${LDAP_DOMAIN}-secret ${TNS}
-if [ $? -eq 0 ]; then
-  oc create secret generic -n ${TNS} ${LDAP_DOMAIN}-secret --from-literal=LDAP_ADMIN_PASSWORD=passw0rd --from-literal=LDAP_CONFIG_PASSWORD=passw0rd
-fi
+  resourceExist secret ${LDAP_DOMAIN}-secret ${TNS}
+  if [ $? -eq 0 ]; then
+    oc create secret generic -n ${TNS} ${LDAP_DOMAIN}-secret --from-literal=LDAP_ADMIN_PASSWORD=passw0rd --from-literal=LDAP_CONFIG_PASSWORD=passw0rd 2> /dev/null 1> /dev/null
+  fi
 
-resourceExist secret ${LDAP_DOMAIN}-customldif ${TNS}
-if [ $? -eq 0 ]; then
-  oc create secret generic -n ${TNS} ${LDAP_DOMAIN}-customldif --from-file=ldap_user.ldif=${LDAP_LDIF_NAME}
-fi
+  resourceExist secret ${LDAP_DOMAIN}-customldif ${TNS}
+  if [ $? -eq 0 ]; then
+    oc create secret generic -n ${TNS} ${LDAP_DOMAIN}-customldif --from-file=ldap_user.ldif=${LDAP_LDIF_NAME} 2> /dev/null 1> /dev/null
+  fi
 }
 
 #-------------------------------
@@ -105,7 +105,7 @@ createServiceAccountAndCfgMap() {
 resourceExist sa ibm-cp4ba-anyuid ${TNS}
 if [ $? -eq 0 ]; then
 
-cat << EOF | oc create -n ${TNS} -f -
+cat << EOF | oc create -n ${TNS} -f - 2> /dev/null 1> /dev/null
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -114,14 +114,14 @@ imagePullSecrets:
 - name: 'ibm-entitlement-key'
 EOF
 
-oc adm policy add-scc-to-user anyuid -z ibm-cp4ba-anyuid -n ${TNS}
+oc adm policy add-scc-to-user anyuid -z ibm-cp4ba-anyuid -n ${TNS} 2> /dev/null 1> /dev/null
 
 fi
 
 resourceExist cm ${LDAP_DOMAIN}-env ${TNS}
 if [ $? -eq 0 ]; then
 
-cat << EOF | oc create -n ${TNS} -f -
+cat << EOF | oc create -n ${TNS} -f - 2> /dev/null 1> /dev/null
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -145,7 +145,7 @@ createDeployment() {
 resourceExist deployment ${LDAP_DOMAIN}-ldap ${TNS}
 if [ $? -eq 0 ]; then
 
-cat << EOF | oc create -n ${TNS} -f -
+cat << EOF | oc create -n ${TNS} -f - 2> /dev/null 1> /dev/null
 kind: Deployment
 apiVersion: apps/v1
 metadata:
@@ -324,7 +324,7 @@ spec:
           emptyDir: {}
 EOF
 
-oc expose deployment -n ${TNS} ${LDAP_DOMAIN}-ldap
+oc expose deployment -n ${TNS} ${LDAP_DOMAIN}-ldap 2> /dev/null 1> /dev/null
 
 fi
 
