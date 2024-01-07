@@ -201,14 +201,14 @@ if [[ -f ${PROPS_FILE} ]];
 then
     source ${PROPS_FILE}
 else
-    echo "ERROR: Properties file "${PROPS_FILE}" not found !!!"
+    echo "ERROR: Configuration properties file "${PROPS_FILE}" not found !!!"
     exit 1
 fi
 if [[ -f ${LDAP_FILE} ]];
 then
     source ${LDAP_FILE}
 else
-    echo "ERROR: Properties file "${LDAP_FILE}" not found !!!"
+    echo "ERROR: LDAP properties file "${LDAP_FILE}" not found !!!"
     exit 1
 fi
 
