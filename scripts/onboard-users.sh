@@ -91,7 +91,7 @@ loadUsersFromSecret () {
   resourceExist ${TNS} "secret" ${LDAP_DOMAIN}-customldif
   if [ $? -eq 1 ]; then
     LIST_OF_USERS=$(oc get secrets -n ${TNS} ${LDAP_DOMAIN}-customldif -o jsonpath='{.data.ldap_user\.ldif}' | base64 -d | grep "uid:" | sed 's/uid: //g')
-    _FNAME="tmp-file-users"
+    _FNAME="/tmp/pak-onboard-users-$USER-$RANDOM"
     echo $LIST_OF_USERS > ${_FNAME}
     sed 's/ /+/g' -i ${_FNAME}
     LIST_OF_USERS=$(cat ${_FNAME})
@@ -108,7 +108,7 @@ loadUsersFromFile () {
 
   if [[ -f $1 ]];
   then
-    _FNAME="tmp-file-users"
+    _FNAME="/tmp/pak-onboard-users-$USER-$RANDOM"
     LIST_OF_USERS=$(cat $1)
     echo $LIST_OF_USERS > ${_FNAME}
     sed 's/ /+/g' -i ${_FNAME}
