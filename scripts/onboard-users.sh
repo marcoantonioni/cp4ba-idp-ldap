@@ -91,11 +91,15 @@ loadUsersFromSecret () {
   resourceExist ${TNS} "secret" ${LDAP_DOMAIN}-customldif
   if [ $? -eq 1 ]; then
     LIST_OF_USERS=$(oc get secrets -n ${TNS} ${LDAP_DOMAIN}-customldif -o jsonpath='{.data.ldap_user\.ldif}' | base64 -d | grep "uid:" | sed 's/uid: //g')
+    # because sed -i & Darwin...
     _FNAME="/tmp/pak-onboard-users-$USER-$RANDOM"
+    _FNAME2="${_FNAME}-transformed"
     echo $LIST_OF_USERS > ${_FNAME}
-    sed 's/ /+/g' -i ${_FNAME}
-    LIST_OF_USERS=$(cat ${_FNAME})
+    #sed 's/ /+/g' -i ${_FNAME}
+    cat ${_FNAME} | sed 's/ /+/g' > ${_FNAME2}    
+    LIST_OF_USERS=$(cat ${_FNAME2})
     rm ${_FNAME} 2>/dev/null
+    rm ${_FNAME2} 2>/dev/null
   else
     echo "ERROR: secret '${LDAP_DOMAIN}-customldif' not found in namespace '${TNS}'"
     exit 1
@@ -110,11 +114,15 @@ loadUsersFromFile () {
   then
     _FNAME="/tmp/pak-onboard-users-$USER-$RANDOM"
     LIST_OF_USERS=$(cat $1)
+    # because sed -i & Darwin...
+    _FNAME="/tmp/pak-onboard-users-$USER-$RANDOM"
+    _FNAME2="${_FNAME}-transformed"
     echo $LIST_OF_USERS > ${_FNAME}
-    sed 's/ /+/g' -i ${_FNAME}
-    LIST_OF_USERS=$(cat ${_FNAME})
+    #sed 's/ /+/g' -i ${_FNAME}
+    cat ${_FNAME} | sed 's/ /+/g' > ${_FNAME2}    
+    LIST_OF_USERS=$(cat ${_FNAME2})
     rm ${_FNAME} 2>/dev/null
-
+    rm ${_FNAME2} 2>/dev/null
   else
       echo "ERROR: Users file "$1" not found !!!"
       exit 1
