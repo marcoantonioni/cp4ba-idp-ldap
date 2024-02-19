@@ -8,8 +8,9 @@ USERS_FILE=""
 USERS_SECRET=false
 OPERATION_MODE=""
 _TNS=""
+_LIST_ROLES=false
 
-while getopts p:l:n:u:o:s flag
+while getopts p:l:n:u:o:sr flag
 do
     case "${flag}" in
         p) PROPS_FILE=${OPTARG};;
@@ -18,6 +19,7 @@ do
         u) USERS_FILE=${OPTARG};;
         o) OPERATION_MODE=${OPTARG};;
         s) USERS_SECRET=true;;
+        r) _LIST_ROLES=true;;
     esac
 done
 
@@ -141,9 +143,13 @@ onboardUsersAdd () {
 
   for _USR in "${ALL_USERS[@]}";
   do
+    if [[ "${_USR}" != "cp4admin" ]]; then
+
     USER_RECORD='{"username":"'${_USR}'","displayName":"'${_USR}'","email":"","authenticator":"external","user_roles":["zen_user_role"],"misc":{"realm_name":"'${LDAP_DOMAIN}'","extAttributes":{}}}'
     USER_RECORD="${USER_RECORD},"
     UPDATED_LIST=${UPDATED_LIST}${USER_RECORD}
+    
+    fi
   done
   LIST_OF_RECORDS=$( echo ${UPDATED_LIST} | sed 's/.$//g')
 
@@ -212,21 +218,40 @@ else
     echo "ERROR: Configuration properties file "${PROPS_FILE}" not found !!!"
     exit 1
 fi
-if [[ -f ${LDAP_FILE} ]];
-then
-    source ${LDAP_FILE}
-else
-    echo "ERROR: LDAP properties file "${LDAP_FILE}" not found !!!"
-    exit 1
-fi
+
+#if [[ -f ${LDAP_FILE} ]];
+#then
+#    source ${LDAP_FILE}
+#else
+#    echo "ERROR: LDAP properties file "${LDAP_FILE}" not found !!!"
+#    exit 1
+#fi
 
 if [[ "${_TNS}" != "" ]]; then
   TNS="${_TNS}"
 fi
 
+
 echo "=============================================================="
 echo "Onboard users from domain ["${LDAP_DOMAIN}"] for namespace ["${TNS}"]"
 echo "=============================================================="
+
+if [[ "${_LIST_ROLES}" = "true" ]]; then
+  getCommonValues
+  echo ""
+  echo "Roles:"
+  RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -H 'Content-Type: application/json' \
+              "${PAK_HOST}/usermgmt/v1/roles")
+  echo $RESPONSE | jq .
+
+  echo ""
+  echo "Groups:"
+  RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -H 'Content-Type: application/json' \
+              "${PAK_HOST}/usermgmt/v2/groups")
+  echo $RESPONSE | jq .
+
+  exit
+fi
 
 if [[ "${OPERATION_MODE}" = "add" ]] || [[ "${OPERATION_MODE}" = "remove" ]] || [[ "${OPERATION_MODE}" = "remove-and-add" ]]; then
   getCommonValues
