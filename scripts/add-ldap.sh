@@ -386,7 +386,7 @@ createServiceAccountAndCfgMap
 
 createDeployment
 
-waitForDeploymentReady ${TNS} ${LDAP_DOMAIN}-ldap ${WAIT_SECS}
+waitForDeploymentReady ${TNS} ${LDAP_DOMAIN}-ldap ${LDAP_WAIT_SECS}
 
 
 LDAP_SVC_NAME=$(oc get services -n ${TNS} | grep ${LDAP_DOMAIN} | awk '{print $1}')

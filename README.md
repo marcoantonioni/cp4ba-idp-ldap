@@ -50,7 +50,7 @@ LDAP_FULL_DOMAIN="dc=${LDAP_DOMAIN},dc=${LDAP_DOMAIN_EXT}"
 LDAP_LDIF_NAME="./configs/_cfg1-ldap-domain.ldif"
 
 # wait check interval
-WAIT_SECS=10
+LDAP_WAIT_SECS=10
 
 # Cloud Pak entitlement key (export CP4BA_AUTO_ENTITLEMENT_KEY in your shell before run the installation script)
 ENTITLEMENT_KEY=${CP4BA_AUTO_ENTITLEMENT_KEY}

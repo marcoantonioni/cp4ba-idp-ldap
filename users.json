@@ -1,0 +1,188 @@
+{
+  "user_data": [
+    {
+      "uid": "1000331005",
+      "username": "baw-sgxmfbxh",
+      "displayName": "Service ID for BAW-sgxmfBXh",
+      "email": "",
+      "approval_status": "approved",
+      "permissions": [
+        "can_administrate_business_teams"
+      ],
+      "user_roles": [
+        "iaf-automation-developer",
+        "iaf-automation-admin"
+      ],
+      "current_account_status": "enabled",
+      "internal_user": false,
+      "deletable": true,
+      "authenticator": "external",
+      "created_timestamp": 1708421333974,
+      "last_modified_timestamp": 1708421333974,
+      "misc": {
+        "sessionInfo": [],
+        "last_session_ended_timestamp": "",
+        "last_session_start_timestamp": "",
+        "dark_mode": false
+      },
+      "profile_picture": "",
+      "is_custom_picture": false,
+      "role": "User",
+      "groups": [
+        {
+          "group_id": 10000,
+          "name": "All users",
+          "description": "All users are implicitly part of this group",
+          "created_by": "",
+          "created_at": "",
+          "updated_at": "",
+          "misc": {},
+          "members_count": "4"
+        }
+      ],
+      "group_roles": []
+    },
+    {
+      "uid": "1000331004",
+      "username": "func-gdyci",
+      "displayName": "Service ID for func-GdYcI",
+      "email": "",
+      "approval_status": "approved",
+      "permissions": [
+        "can_administrate_business_teams"
+      ],
+      "user_roles": [
+        "iaf-automation-developer",
+        "iaf-automation-admin"
+      ],
+      "current_account_status": "enabled",
+      "internal_user": false,
+      "deletable": true,
+      "authenticator": "external",
+      "created_timestamp": 1708421146882,
+      "last_modified_timestamp": 1708421146882,
+      "misc": {
+        "sessionInfo": [],
+        "last_session_ended_timestamp": "",
+        "last_session_start_timestamp": "",
+        "dark_mode": false
+      },
+      "profile_picture": "",
+      "is_custom_picture": false,
+      "role": "User",
+      "groups": [
+        {
+          "group_id": 10000,
+          "name": "All users",
+          "description": "All users are implicitly part of this group",
+          "created_by": "",
+          "created_at": "",
+          "updated_at": "",
+          "misc": {},
+          "members_count": "4"
+        }
+      ],
+      "group_roles": []
+    },
+    {
+      "uid": "1000331002",
+      "username": "kubeadmin",
+      "displayName": "kubeadmin",
+      "email": "kubeadmin",
+      "approval_status": "approved",
+      "permissions": [
+        "administrator",
+        "can_provision",
+        "monitor_platform",
+        "configure_platform",
+        "view_platform_health",
+        "configure_auth",
+        "manage_users",
+        "manage_groups",
+        "manage_service_instances"
+      ],
+      "user_roles": [
+        "zen_administrator_role"
+      ],
+      "current_account_status": "enabled",
+      "internal_user": false,
+      "deletable": true,
+      "authenticator": "external",
+      "created_timestamp": 1708420100533,
+      "last_modified_timestamp": 1708420100533,
+      "misc": {
+        "sessionInfo": [],
+        "last_session_ended_timestamp": "",
+        "last_session_start_timestamp": "",
+        "dark_mode": false
+      },
+      "profile_picture": "",
+      "is_custom_picture": false,
+      "role": "Admin",
+      "groups": [
+        {
+          "group_id": 10000,
+          "name": "All users",
+          "description": "All users are implicitly part of this group",
+          "created_by": "",
+          "created_at": "",
+          "updated_at": "",
+          "misc": {},
+          "members_count": "4"
+        }
+      ],
+      "group_roles": []
+    },
+    {
+      "uid": "1000331001",
+      "username": "cpadmin",
+      "displayName": "cpadmin",
+      "email": "cpadmin",
+      "approval_status": "approved",
+      "permissions": [
+        "administrator",
+        "can_provision",
+        "monitor_platform",
+        "configure_platform",
+        "view_platform_health",
+        "configure_auth",
+        "manage_users",
+        "manage_groups",
+        "manage_service_instances"
+      ],
+      "user_roles": [
+        "zen_administrator_role"
+      ],
+      "current_account_status": "enabled",
+      "internal_user": false,
+      "deletable": true,
+      "authenticator": "external",
+      "created_timestamp": 1708419549411,
+      "last_modified_timestamp": 1708421396423,
+      "misc": {
+        "dark_mode": false,
+        "extAttributes": {}
+      },
+      "profile_picture": "",
+      "is_custom_picture": false,
+      "role": "Admin",
+      "groups": [
+        {
+          "group_id": 10000,
+          "name": "All users",
+          "description": "All users are implicitly part of this group",
+          "created_by": "",
+          "created_at": "",
+          "updated_at": "",
+          "misc": {},
+          "members_count": "4"
+        }
+      ],
+      "group_roles": []
+    }
+  ],
+  "user_count": "4",
+  "_messageCode_": "success",
+  "message": "success"
+}
+

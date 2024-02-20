@@ -77,8 +77,6 @@ getCommonValues () {
 
   ZEN_TK=$(curl -sk "${PAK_HOST}/v1/preauth/validateAuth" -H "username:${ADMIN_USERNAME}" -H "iam-token: ${IAM_ACCESS_TK}" | jq -r .accessToken)
 
-  # curl -skH "Authorization: Bearer ${ZEN_TK}" "${PAK_HOST}/usermgmt/v1/users" | jq
-
   echo "Pak console: "${CONSOLE_HOST}
   echo "Pak cpd console: "${PAK_HOST}
   echo "Pak administrator: ${ADMIN_USERNAME} / ${ADMIN_PASSW}"
@@ -141,14 +139,26 @@ onboardUsersAdd () {
   tot_users=${#ALL_USERS[@]}
   UPDATED_LIST=""
 
+  _ADMINS=()
+  if [[ ! -z "${LDAP_ADMINS}" ]]; then
+    IFS=',' read -a _ADMINS <<< "${LDAP_ADMINS}"
+  fi
+
   for _USR in "${ALL_USERS[@]}";
   do
-    if [[ "${_USR}" = "cp4admin" ]] || [[ "${_USR}" = "banadmin" ]] || [[ "${_USR}" = "p8admin" ]]; then
-      USER_RECORD='{"username":"'${_USR}'","displayName":"'${_USR}'","email":"","authenticator":"external","user_roles":["iaf-automation-admin", "iaf-automation-developer"],"misc":{"realm_name":"'${LDAP_DOMAIN}'","extAttributes":{}}}'
+    isAdmin=0
+    for admin in "${_ADMINS[@]}"; do
+      admin=$(echo $admin | tr -d ' ')
+      if [[ "$admin" = "$_USR" ]]; then
+        isAdmin=1
+      fi
+    done
+    if [ $isAdmin -eq 1 ]; then
+      USER_RECORD='{"username":"'${_USR}'","displayName":"'${_USR}'","email":"'${_USR}'@'${LDAP_DOMAIN}'.'${LDAP_DOMAIN_EXT}'","authenticator":"external","user_roles":["iaf-automation-admin","zen_administrator_role","iaf-automation-analyst","iaf-automation-developer","iaf-automation-operator","zen_user_role"],"misc":{"realm_name":"'${LDAP_DOMAIN}'","extAttributes":{}}}'
       USER_RECORD="${USER_RECORD},"
       UPDATED_LIST=${UPDATED_LIST}${USER_RECORD}
     else
-      USER_RECORD='{"username":"'${_USR}'","displayName":"'${_USR}'","email":"","authenticator":"external","user_roles":["zen_user_role"],"misc":{"realm_name":"'${LDAP_DOMAIN}'","extAttributes":{}}}'
+      USER_RECORD='{"username":"'${_USR}'","displayName":"'${_USR}'","email":"'${_USR}'@'${LDAP_DOMAIN}'.'${LDAP_DOMAIN_EXT}'","authenticator":"external","user_roles":["zen_user_role"],"misc":{"realm_name":"'${LDAP_DOMAIN}'","extAttributes":{}}}'
       USER_RECORD="${USER_RECORD},"
       UPDATED_LIST=${UPDATED_LIST}${USER_RECORD}
     fi
@@ -161,7 +171,6 @@ onboardUsersAdd () {
     _DATA='['${LIST_OF_RECORDS}']'
     RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -H 'Content-Type: application/json' \
                  -d $_DATA -X POST "${PAK_HOST}/usermgmt/v1/user/bulk")
-
     if [[ "${RESPONSE}" == *"error"* ]]; then
       echo "ERROR adding users"
       echo "${RESPONSE}"
@@ -176,6 +185,10 @@ onboardUsersAdd () {
         echo $RESPONSE
       fi
     fi
+
+    #_ALL_USERS=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -X GET "${PAK_HOST}/usermgmt/v1/usermgmt/users?include_profile_picture=true&offset=0&limit=500&sort_order=DESC&sort_by=created_timestamp&include_users_count=true")  
+    #echo $_ALL_USERS | jq .
+
   else
     echo "No users to add."
   fi
