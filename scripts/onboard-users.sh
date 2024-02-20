@@ -143,12 +143,14 @@ onboardUsersAdd () {
 
   for _USR in "${ALL_USERS[@]}";
   do
-    if [[ "${_USR}" != "cp4admin" ]]; then
-
-    USER_RECORD='{"username":"'${_USR}'","displayName":"'${_USR}'","email":"","authenticator":"external","user_roles":["zen_user_role"],"misc":{"realm_name":"'${LDAP_DOMAIN}'","extAttributes":{}}}'
-    USER_RECORD="${USER_RECORD},"
-    UPDATED_LIST=${UPDATED_LIST}${USER_RECORD}
-    
+    if [[ "${_USR}" = "cp4admin" ]] || [[ "${_USR}" = "banadmin" ]] || [[ "${_USR}" = "p8admin" ]]; then
+      USER_RECORD='{"username":"'${_USR}'","displayName":"'${_USR}'","email":"","authenticator":"external","user_roles":["iaf-automation-admin", "iaf-automation-developer"],"misc":{"realm_name":"'${LDAP_DOMAIN}'","extAttributes":{}}}'
+      USER_RECORD="${USER_RECORD},"
+      UPDATED_LIST=${UPDATED_LIST}${USER_RECORD}
+    else
+      USER_RECORD='{"username":"'${_USR}'","displayName":"'${_USR}'","email":"","authenticator":"external","user_roles":["zen_user_role"],"misc":{"realm_name":"'${LDAP_DOMAIN}'","extAttributes":{}}}'
+      USER_RECORD="${USER_RECORD},"
+      UPDATED_LIST=${UPDATED_LIST}${USER_RECORD}
     fi
   done
   LIST_OF_RECORDS=$( echo ${UPDATED_LIST} | sed 's/.$//g')

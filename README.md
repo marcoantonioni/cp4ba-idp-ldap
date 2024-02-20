@@ -146,40 +146,8 @@ LDAP_PAGING_SIZE="1000"
 ## List Roles and Groups
 
 ```
-./scripts/onboard-users.sh -p ./configs/_cfg1-idp.properties -r
-
+./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -r
 ```
-### types of role
-```
-
-      "roles": [
-        {
-          "role_id": "zen_administrator_role",
-          "role_name": "Administrator"
-        },
-        {
-          "role_id": "iaf-automation-admin",
-          "role_name": "Automation Administrator"
-        },
-        {
-          "role_id": "iaf-automation-analyst",
-          "role_name": "Automation Analyst"
-        },
-        {
-          "role_id": "iaf-automation-developer",
-          "role_name": "Automation Developer"
-        },
-        {
-          "role_id": "iaf-automation-operator",
-          "role_name": "Automation Operator"
-        },
-        {
-          "role_id": "zen_user_role",
-          "role_name": "User"
-        }
-      ],
-```
-
 
 ## LDAP deletion commands
 ```
