@@ -35,14 +35,16 @@ extractCreateSecretsTls () {
   oc get secrets -n ${SECRET_NAMESPACE} ${SECRET_NAME_WEB_UI} -o jsonpath='{.data.tls\.crt}' | base64 -d > ./common-web-ui-cert.cert
   oc get secrets -n ${SECRET_NAMESPACE} ${SECRET_NAME_WEB_UI} -o jsonpath='{.data.tls\.key}' | base64 -d > ./common-web-ui-cert.key
 
-  resourceExist secret phpadminldap-${LDAP_DOMAIN}-root-ca ${TNS}
+  resourceExist secret phpadminldap-${LDAP_DOMAIN}-root-ca ${SECRET_NAMESPACE}
   if [ $? -eq 0 ]; then
-    oc create secret -n ${TNS} tls phpadminldap-${LDAP_DOMAIN}-root-ca --cert=./tls.cert --key=./tls.key
+    echo "oc create secret -n ${SECRET_NAMESPACE} tls phpadminldap-${LDAP_DOMAIN}-root-ca --cert=./tls.cert --key=./tls.key"
+    oc create secret -n ${SECRET_NAMESPACE} tls phpadminldap-${LDAP_DOMAIN}-root-ca --cert=./tls.cert --key=./tls.key
   fi
 
-  resourceExist secret phpadminldap-${LDAP_DOMAIN}-prereq-ext ${TNS}
+  resourceExist secret phpadminldap-${LDAP_DOMAIN}-prereq-ext ${SECRET_NAMESPACE}
   if [ $? -eq 0 ]; then
-    oc create secret -n ${TNS} tls phpadminldap-${LDAP_DOMAIN}-prereq-ext --cert=./common-web-ui-cert.cert --key=./common-web-ui-cert.key
+    echo "oc create secret -n ${SECRET_NAMESPACE} tls phpadminldap-${LDAP_DOMAIN}-prereq-ext --cert=./common-web-ui-cert.cert --key=./common-web-ui-cert.key"
+    oc create secret -n ${SECRET_NAMESPACE} tls phpadminldap-${LDAP_DOMAIN}-prereq-ext --cert=./common-web-ui-cert.cert --key=./common-web-ui-cert.key
   fi
 
   rm ./tls.cert ./tls.key ./common-web-ui-cert.cert ./common-web-ui-cert.key
@@ -54,17 +56,17 @@ deployPHPAdmin () {
 PHPLDAPADMIN_IMAGE="cp.icr.io/cp/cp4a/demo/phpldapadmin"
 PHPLDAPADMIN_TAG="0.9.0.1"
 
-resourceExist cm php-admin-${LDAP_DOMAIN}-cm ${TNS}
+resourceExist cm php-admin-${LDAP_DOMAIN}-cm ${SECRET_NAMESPACE}
 if [ $? -eq 0 ]; then
 
 #-------------------------------------
 # 
-cat <<EOF | oc apply -n ${TNS} -f -
+cat <<EOF | oc apply -n ${SECRET_NAMESPACE} -f -
 kind: ConfigMap
 apiVersion: v1
 metadata:
   name: php-admin-${LDAP_DOMAIN}-cm
-  namespace: ${TNS}
+  namespace: ${SECRET_NAMESPACE}
   labels:
     app: phpldapadmin
     chart: phpldapadmin-0.1.3
@@ -83,15 +85,15 @@ fi
 #-------------------------------------
 # 
 
-resourceExist deployment phpldapadmin-${LDAP_DOMAIN} ${TNS}
+resourceExist deployment phpldapadmin-${LDAP_DOMAIN} ${SECRET_NAMESPACE}
 if [ $? -eq 0 ]; then
 
-cat <<EOF | oc apply -n ${TNS} -f -
+cat <<EOF | oc apply -n ${SECRET_NAMESPACE} -f -
 kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: phpldapadmin-${LDAP_DOMAIN}
-  namespace: ${TNS}
+  namespace: ${SECRET_NAMESPACE}
   labels:
     app: phpldapadmin-${LDAP_DOMAIN}
     chart: phpldapadmin-0.1.3
@@ -192,15 +194,15 @@ fi
 #-------------------------------------
 # 
 
-resourceExist service php-admin-${LDAP_DOMAIN} ${TNS}
+resourceExist service php-admin-${LDAP_DOMAIN} ${SECRET_NAMESPACE}
 if [ $? -eq 0 ]; then
 
-cat <<EOF | oc apply -n ${TNS} -f -
+cat <<EOF | oc apply -n ${SECRET_NAMESPACE} -f -
 apiVersion: v1
 kind: Service
 metadata:
   name: php-admin-${LDAP_DOMAIN}
-  namespace: ${TNS}
+  namespace: ${SECRET_NAMESPACE}
 spec:
   selector:
     app: phpldapadmin-${LDAP_DOMAIN}
@@ -212,21 +214,21 @@ EOF
 
 fi 
 
-resourceExist route php-admin-${LDAP_DOMAIN} ${TNS}
+resourceExist route php-admin-${LDAP_DOMAIN} ${SECRET_NAMESPACE}
 if [ $? -eq 0 ]; then
 
 # create temp route
-oc expose service -n ${TNS} php-admin-${LDAP_DOMAIN}
+oc expose service -n ${SECRET_NAMESPACE} php-admin-${LDAP_DOMAIN}
 
 #-------------------------------------
 # Build php-admin route
-URL=$(oc get route -n ${TNS} php-admin-${LDAP_DOMAIN} -o jsonpath='{.spec.host}')
+URL=$(oc get route -n ${SECRET_NAMESPACE} php-admin-${LDAP_DOMAIN} -o jsonpath='{.spec.host}')
 readarray -d . -t URLARR <<< "$URL"
 PARTS=""
 for (( n=0; n < ${#URLARR[*]}; n++))
 do
   if [[ $n -eq 0 ]]; then
-    PARTS="php-admin-${LDAP_DOMAIN}-"${TNS}
+    PARTS="php-admin-${LDAP_DOMAIN}-"${SECRET_NAMESPACE}
   else
     PARTS=$PARTS".${URLARR[n]}"
   fi 
@@ -236,16 +238,16 @@ export PHP_FQDN=$PARTS
 echo "php-admin host: https://"${PHP_FQDN}
 
 # delete temp route
-oc delete route -n ${TNS} php-admin-${LDAP_DOMAIN}
+oc delete route -n ${SECRET_NAMESPACE} php-admin-${LDAP_DOMAIN}
 
 #-------------------------------------
 # 
-cat <<EOF | oc apply -n ${TNS} -f -
+cat <<EOF | oc apply -n ${SECRET_NAMESPACE} -f -
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
   name: php-admin-${LDAP_DOMAIN}
-  namespace: ${TNS}
+  namespace: ${SECRET_NAMESPACE}
 spec:
   host: >-
     ${PHP_FQDN}
@@ -279,6 +281,6 @@ extractCreateSecretsTls
 deployPHPAdmin
 
 PHPADMIN_USER="cn=admin,${LDAP_FULL_DOMAIN}"
-PHPADMIN_PASSWORD=$(oc -n ${TNS} get secret ${LDAP_DOMAIN}-secret -o jsonpath='{.data.LDAP_ADMIN_PASSWORD}' | base64 -d)
+PHPADMIN_PASSWORD=$(oc -n ${SECRET_NAMESPACE} get secret ${LDAP_DOMAIN}-secret -o jsonpath='{.data.LDAP_ADMIN_PASSWORD}' | base64 -d)
 
 echo "php-admin user[${PHPADMIN_USER}] password[${PHPADMIN_PASSWORD}]"
