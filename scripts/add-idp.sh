@@ -73,6 +73,10 @@ getCommonValues () {
 # create file for idp configuration
 createIDPConfiguration () {
 
+if [[ -z ${IDP_NAME} ]]; then
+  IDP_NAME="vuxprod"
+fi
+
 # IDP v4.x
 echo '{
   "name": "'${IDP_NAME}'",
@@ -138,6 +142,9 @@ createIdp () {
       echo -e "ERROR configuring [${IDP_NAME}], already configured, use -f to force a new installation"
     else
       echo -e "ERROR configuring [${IDP_NAME}]\n${RESPONSE}"
+
+      cat ./${IDP_NAME}.json
+
     fi
     exit
   else
