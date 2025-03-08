@@ -98,7 +98,7 @@ echo '{
         "ldap_userfilter": "'${LDAP_USERFILTER}'",
         "ldap_useridmap": "'${LDAP_USERIDMAP}'",
         "ldap_groupfilter": "'${LDAP_GROUPFILTER}'",
-        "ldap_groupidmap": "'${LDAP_USERIDMAP}'",
+        "ldap_groupidmap": "'${LDAP_GROUPIDMAP}'",
         "ldap_groupmemberidmap": "'${LDAP_GROUPMEMBERIDMAP}'",
         "ldap_nestedsearch": "'${LDAP_NESTEDSEARCH}'",
         "ldap_pagingsearch": "'${LDAP_PAGINGSEARCH}'"

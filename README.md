@@ -8,6 +8,7 @@ This repository contains a series of examples and tools for creating and configu
 
 ## Change Log
 
+2025-03-08: Fixed createIDPConfiguration (ldap_groupidmap)
 2024-01-29: Changed 'sed -i' command for compatibility with Darwin platform
 
 <b>**WARNING**</b>:
@@ -87,7 +88,7 @@ LDAP_BINDPASSWORD="..."
 # OpenLDAP type values (change values as needed)
 LDAP_TYPE="Custom"
 LDAP_USERFILTER="(&(cn=%v)(objectclass=person))" 
-LDAP_GROUPFILTER="(&(cn=%v)(objectclass=groupOfNames))"
+LDAP_GROUPFILTER="(&(cn=%v)(|(objectclass=groupOfNames)(objectclass=groupOfUniqueNames)(objectclass=groupOfURLs)))"
 LDAP_USERIDMAP="*:uid"
 LDAP_GROUPIDMAP="*:cn"
 LDAP_GROUPMEMBERIDMAP="memberof:member"
