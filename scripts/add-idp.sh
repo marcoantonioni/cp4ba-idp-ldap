@@ -233,4 +233,5 @@ verifyIDPAlreadyPresent
 createIdp
 getIDPInfos
 showIDPList
+echo "===>> !!! Remember to restart the BAW server to also see the "Groups" carried by the new IDP."
 

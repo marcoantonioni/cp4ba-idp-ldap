@@ -124,6 +124,7 @@ LDAP_PAGING_SIZE="1000"
 ```
 
 ## IDP installation and configuration commands
+Remember to restart the BAW server to also see the "Groups" carried by the new IDP.
 ```
 ./scripts/add-idp.sh -p ./configs/_cfg1-idp.properties
 ```
