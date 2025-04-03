@@ -10,11 +10,13 @@ _CLR_NC="\033[0m"
 #-------------------------------
 # read installation parameters
 PROPS_FILE=""
+_NS="${TNS}"
 
-while getopts p: flag
+while getopts p:n: flag
 do
     case "${flag}" in
         p) PROPS_FILE=${OPTARG};;
+        n) _NS=${OPTARG};;
     esac
 done
 
@@ -370,6 +372,7 @@ else
     exit
 fi
 
+TNS=${_NS}
 echo "=============================================================="
 echo -e "${_CLR_GREEN}Installing LDAP in namespace '${_CLR_YELLOW}"${TNS}"${_CLR_GREEN}'${_CLR_NC}"
 echo "=============================================================="

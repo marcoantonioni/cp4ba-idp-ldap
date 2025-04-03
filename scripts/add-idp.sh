@@ -4,12 +4,14 @@
 # read installation parameters
 PROPS_FILE=""
 FORCE_INST=false
+_NS="${TNS}"
 
-while getopts p:f flag
+while getopts p:n:f flag
 do
     case "${flag}" in
         f) FORCE_INST=true;;
         p) PROPS_FILE=${OPTARG};;
+        n) _NS=${OPTARG};;
     esac
 done
 
@@ -222,7 +224,8 @@ else
     exit
 fi
 
-echo "======================================================================"
+ecTNS=${_NS}
+ho "======================================================================"
 echo "Configuring IDP ["${IDP_NAME}"] for namespace ["${TNS}"]"
 echo "======================================================================"
 echo ""
