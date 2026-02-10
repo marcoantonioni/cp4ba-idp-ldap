@@ -58,6 +58,11 @@ waitForResourceCreated () {
 #-------------------------------
 # get common values
 getCommonValues () {
+  _ROUTE_NAME="cp-console"
+  if [ $(oc get routes -n ${TNS} $_ROUTE_NAME --no-headers 2> /dev/null | wc -l) -lt 1 ]; then
+    _ROUTE_NAME="platform-id-provider"
+    echo "Using console route name [${_ROUTE_NAME}]"
+  fi
 
   waitForResourceCreated ${TNS} "secret" "platform-auth-idp-credentials" 10
   waitForResourceCreated ${TNS} "route" "cpd" 10
@@ -67,7 +72,7 @@ getCommonValues () {
   ADMIN_PASSW=$(oc get secret platform-auth-idp-credentials -n ${TNS} -o jsonpath='{.data.admin_password}' | base64 -d)
 
   # get admin URL
-  CONSOLE_HOST="https://"$(oc get route -n ${TNS} cp-console -o jsonpath="{.spec.host}")
+  CONSOLE_HOST="https://"$(oc get route -n ${TNS} ${_ROUTE_NAME} -o jsonpath="{.spec.host}")
   PAK_HOST="https://"$(oc get route -n ${TNS} cpd -o jsonpath="{.spec.host}")
 
   # get IAM access token
