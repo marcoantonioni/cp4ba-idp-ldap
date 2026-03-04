@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#set -euo pipefail
+
+
 #-------------------------------
 # read installation parameters
 PROPS_FILE=""
@@ -42,7 +45,7 @@ waitForResourceCreated () {
 #    echo "time to wait: $4"
 
   echo -n "Wait for resource '$3' in namespace '$1' created"
-  while [ true ]
+  while true 
   do
       resourceExist $1 $2 $3
       if [ $? -eq 0 ]; then

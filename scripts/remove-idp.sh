@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#set -euo pipefail
+
+
 #-------------------------------
 # read installation parameters
 PROPS_FILE=""
