@@ -375,7 +375,7 @@ else
     exit
 fi
 
-TNS=${_NS}
+#TNS=${_NS}
 echo "=============================================================="
 echo -e "${_CLR_GREEN}Installing LDAP in namespace '${_CLR_YELLOW}"${TNS}"${_CLR_GREEN}'${_CLR_NC}"
 echo "=============================================================="
