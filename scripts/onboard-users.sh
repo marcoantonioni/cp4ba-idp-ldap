@@ -11,6 +11,7 @@ USERS_FILE=""
 USERS_SECRET=false
 OPERATION_MODE=""
 _TNS=""
+_ENVTNS=""
 _LIST_ROLES=false
 
 #--------------------------------------------------------
@@ -49,12 +50,13 @@ setTemporaryFolder () {
 
 }
 
-while getopts p:l:n:u:o:sr flag
+while getopts p:l:n:u:o:e:sr flag
 do
     case "${flag}" in
         p) PROPS_FILE=${OPTARG};;
         l) LDAP_FILE=${OPTARG};;
         n) _TNS=${OPTARG};;
+        e) _ENVTNS=${OPTARG};;
         u) USERS_FILE=${OPTARG};;
         o) OPERATION_MODE=${OPTARG};;
         s) USERS_SECRET=true;;
@@ -98,21 +100,21 @@ waitForResourceCreated () {
 # get common values
 getCommonValues () {
   _ROUTE_NAME="cp-console"
-  if [ $(oc get routes -n ${TNS} $_ROUTE_NAME --no-headers 2> /dev/null | wc -l) -lt 1 ]; then
+  if [ $(oc get routes -n ${_ENVTNS} $_ROUTE_NAME --no-headers 2> /dev/null | wc -l) -lt 1 ]; then
     _ROUTE_NAME="platform-id-provider"
     echo "Using console route name [${_ROUTE_NAME}]"
   fi
 
-  waitForResourceCreated ${TNS} "secret" "platform-auth-idp-credentials" 10
-  waitForResourceCreated ${TNS} "route" "cpd" 10
+  waitForResourceCreated ${_ENVTNS} "secret" "platform-auth-idp-credentials" 10
+  waitForResourceCreated ${_ENVTNS} "route" "cpd" 10
 
   # get pak admin username / password
-  ADMIN_USERNAME=$(oc get secret platform-auth-idp-credentials -n ${TNS} -o jsonpath='{.data.admin_username}' | base64 -d)
-  ADMIN_PASSW=$(oc get secret platform-auth-idp-credentials -n ${TNS} -o jsonpath='{.data.admin_password}' | base64 -d)
+  ADMIN_USERNAME=$(oc get secret platform-auth-idp-credentials -n ${_ENVTNS} -o jsonpath='{.data.admin_username}' | base64 -d)
+  ADMIN_PASSW=$(oc get secret platform-auth-idp-credentials -n ${_ENVTNS} -o jsonpath='{.data.admin_password}' | base64 -d)
 
   # get admin URL
-  CONSOLE_HOST="https://"$(oc get route -n ${TNS} ${_ROUTE_NAME} -o jsonpath="{.spec.host}")
-  PAK_HOST="https://"$(oc get route -n ${TNS} cpd -o jsonpath="{.spec.host}")
+  CONSOLE_HOST="https://"$(oc get route -n ${_ENVTNS} ${_ROUTE_NAME} -o jsonpath="{.spec.host}")
+  PAK_HOST="https://"$(oc get route -n ${_ENVTNS} cpd -o jsonpath="{.spec.host}")
 
   # get IAM access token
   IAM_ACCESS_TK=$(curl -sk -X POST -H "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" \
@@ -290,6 +292,10 @@ if [[ "${_TNS}" != "" ]]; then
   TNS="${_TNS}"
 fi
 
+if [[ -z "${_ENVTNS}" ]]; then
+  echo -e "${_CLR_RED}ERROR, namespace for environment not set, use -e !${_CLR_GREEN}"
+  exit 1
+fi
 
 echo "=============================================================="
 echo "Onboard users from domain ["${LDAP_DOMAIN}"] for namespace ["${TNS}"]"
