@@ -2,6 +2,7 @@
 
 #set -euo pipefail
 
+_me=$(basename "$0")
 
 #--------------------------------------------------------
 _CLR_RED="\033[0;31m"   #'0;31' is Red's ANSI color code
@@ -10,18 +11,68 @@ _CLR_YELLOW="\033[1;33m"   #'1;32' is Yellow's ANSI color code
 _CLR_BLUE="\033[0;34m"   #'0;34' is Blue's ANSI color code
 _CLR_NC="\033[0m"
 
+#----------------------------------------------------
+_SCRIPT_PATH="${BASH_SOURCE}"
+while [ -L "${_SCRIPT_PATH}" ]; do
+  _SCRIPT_DIR="$(cd -P "$(dirname "${_SCRIPT_PATH}")" >/dev/null 2>&1 && pwd)"
+  _SCRIPT_PATH="$(readlink "${_SCRIPT_PATH}")"
+  [[ ${_SCRIPT_PATH} != /* ]] && _SCRIPT_PATH="${_SCRIPT_DIR}/${_SCRIPT_PATH}"
+done
+_SCRIPT_PATH="$(readlink -f "${_SCRIPT_PATH}")"
+_SCRIPT_DIR="$(cd -P "$(dirname -- "${_SCRIPT_PATH}")" >/dev/null 2>&1 && pwd)"
+
+#----------------------------------------------------
+if [[ ! -f "$_SCRIPT_DIR/../../cp4ba-logger/scripts/logger.sh" ]]; then
+  echo "Error, log package not found !"
+  echo "Clone it alongside with other cp4ba-..."
+  echo "use the command: git clone https://github.com/marcoantonioni/cp4ba-logger"
+  exit 1
+fi
+source $_SCRIPT_DIR/../../cp4ba-logger/scripts/logger.sh
+if [[ -z "${CP4BA_LOGGING_ENABLED}" ]]; then 
+  export CP4BA_LOGGING_ENABLED=true
+fi
+if [[ -z "${CP4BA_LOG_LEVEL}" ]]; then 
+  export CP4BA_LOG_LEVEL="INFO"
+fi
+if [[ -z "${CP4BA_LOG_TO_CONSOLE}" ]]; then 
+  export CP4BA_LOG_TO_CONSOLE=true
+fi
+if [[ -z "${CP4BA_LOG_TO_FILE}" ]]; then 
+  export CP4BA_LOG_TO_FILE=false
+fi
+if [[ -z "${CP4BA_LOG_FILE}" ]]; then 
+  export CP4BA_LOG_FILE=""
+fi
+if [[ -z "${CP4BA_LOG_MAX_SIZE}" ]]; then 
+  export CP4BA_LOG_MAX_SIZE=$((10 * 1024 * 1024))
+fi
+if [[ -z "${CP4BA_LOG_BACKUP_COUNT}" ]]; then 
+  export CP4BA_LOG_BACKUP_COUNT=5
+fi
+
 #-------------------------------
 # read installation parameters
 PROPS_FILE=""
 _NS="${TNS}"
+_CFG=""
 
-while getopts p:n: flag
+while getopts p:n:c: flag
 do
     case "${flag}" in
         p) PROPS_FILE=${OPTARG};;
         n) _NS=${OPTARG};;
+        c) _CFG=${OPTARG};;
     esac
 done
+
+usage () {
+  echo ""
+  echo "usage: $_me
+    -c full-path-to-environment-config-file
+    -n target-namespace
+    -p full-path-to-ldap-config-file"
+}
 
 #-------------------------------
 resourceExist () {
@@ -71,20 +122,57 @@ fi
 #-------------------------------
 checkParams() {
 
-if [ -f "${LDAP_LDIF_NAME}" ]; then
-  echo "Using LDIF ${LDAP_LDIF_NAME}"
-else
-  echo "ERROR: file '${LDAP_LDIF_NAME}' not found."
+if [[ ! -z "${_CFG}" ]]; then
+  if [[ -f "${_CFG}" ]]; then
+    source ${_CFG}
+  else
+    log_error "ERROR: Configuration file "${_CFG}" not found !!!"
+    usage
+    exit 1
+  fi
+fi
+
+if [[ -z "${PROPS_FILE}" ]]; then
+  log_error "ERROR: 'PROPS_FILE' not set."
+  usage
   exit 1
+fi
+if [[ -f "${PROPS_FILE}" ]]; then
+    source ${PROPS_FILE}
+else
+    log_error "ERROR: Properties file "${PROPS_FILE}" not found !!!"
+    usage
+    exit 1
+fi
+
+if [[ -z "${LDAP_LDIF_NAME}" ]]; then
+  log_error "ERROR: 'LDAP_LDIF_NAME' not set."
+  usage
+  exit 1
+fi
+if [[ -f "${LDAP_LDIF_NAME}" ]]; then
+  log_info "Using LDIF ${LDAP_LDIF_NAME}"
+else
+  _CFG_PATH=$(dirname "$_CFG")
+  LDAP_LDIF_NAME="${_CFG_PATH}/${LDAP_LDIF_NAME}"
+  if [[ -f "${LDAP_LDIF_NAME}" ]]; then
+    log_info "Using LDIF ${LDAP_LDIF_NAME}"
+  else
+    log_error "ERROR: file '${LDAP_LDIF_NAME}' not found."
+    usage
+    exit 1
+  fi
 fi
 
 if [ -z "${TNS}" ]; then
-    echo "ERROR: TNS, namespace not set"
+    log_error "ERROR: TNS, namespace not set"
+    usage
     exit 1
 fi
 
 if [ -z "${ENTITLEMENT_KEY}" ]; then
-    echo "ERROR: ENTITLEMENT_KEY, key not set"
+    log_error "ERROR: ENTITLEMENT_KEY, key not set"
+    usage
     exit 1
 fi
 
@@ -354,12 +442,12 @@ waitForDeploymentReady () {
     REPLICAS=$(oc get deployment -n $1 $2 -o jsonpath="{.status.replicas}")
     READY_REPLICAS=$(oc get deployment -n $1 $2 -o jsonpath="{.status.readyReplicas}")
     if [ "${REPLICAS}" = "${READY_REPLICAS}" ]; then
-      echo ""
-      echo "Resource '$2' in namespace '$1' is READY"
+      log_msg ""
+      # log_info "Resource '$2' in namespace '$1' is READY"
       break
     else
       ((_seconds=_seconds+1))
-      echo -e -n "Wait for resource '$2' in namespace '$1' to be READY [$_seconds]\033[0K\r"
+      # echo -e -n "Wait for resource '$2' in namespace '$1' to be READY [$_seconds]\033[0K\r"
       sleep 1
     fi
   done
@@ -367,21 +455,13 @@ waitForDeploymentReady () {
 
 #===============================
 
-if [[ -f ${PROPS_FILE} ]];
-then
-    source ${PROPS_FILE}
-else
-    echo "ERROR: Properties file "${PROPS_FILE}" not found !!!"
-    exit
-fi
-
-#TNS=${_NS}
-echo "=============================================================="
-echo -e "${_CLR_GREEN}Installing LDAP in namespace '${_CLR_YELLOW}"${TNS}"${_CLR_GREEN}'${_CLR_NC}"
-echo "=============================================================="
+log_info "=============================================================="
+log_info "${_CLR_GREEN}Installing LDAP${_CLR_NC}"
+log_info "=============================================================="
 
 checkParams
 
+log_info "${_CLR_GREEN}Target namespace '${_CLR_YELLOW}${TNS}${_CLR_GREEN}'${_CLR_NC}"
 createNamespace
 
 createEntitlementSecrets
@@ -395,12 +475,12 @@ createDeployment
 waitForDeploymentReady ${TNS} ${LDAP_DOMAIN}-ldap ${LDAP_WAIT_SECS}
 
 
-LDAP_SVC_NAME=$(oc get services -n ${TNS} | grep ${LDAP_DOMAIN} | awk '{print $1}')
-echo -e "Your LDAP service url is '${_CLR_YELLOW}"${LDAP_SVC_NAME}.${TNS}.svc.cluster.local${_CLR_NC}"'"
-echo -e "LDAP service ports"
-oc get service -n ${TNS} ${LDAP_SVC_NAME} -o yaml | grep port:
-echo "Possible full address (ports may vary)"
-echo "  ldap://${LDAP_SVC_NAME}.${TNS}.svc.cluster.local:389"
-echo "  ldaps://${LDAP_SVC_NAME}.${TNS}.svc.cluster.local:636"
+LDAP_SVC_NAME=$(oc get services -n ${TNS} | grep ${LDAP_DOMAIN}-ldap | awk '{print $1}')
+log_info "Your LDAP service url is '${_CLR_YELLOW}"${LDAP_SVC_NAME}.${TNS}.svc.cluster.local${_CLR_NC}"'"
+# log_info "LDAP service ports"
+# oc get service -n ${TNS} ${LDAP_SVC_NAME} -o yaml | grep port:
 
-echo "LDAP installed."
+log_info "Full addresses"
+log_info "  ${_CLR_YELLOW}ldap://${LDAP_SVC_NAME}.${TNS}.svc.cluster.local:389${_CLR_NC}"
+log_info "  ${_CLR_YELLOW}ldaps://${LDAP_SVC_NAME}.${TNS}.svc.cluster.local:636${_CLR_NC}"
+log_info "LDAP installed."

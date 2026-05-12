@@ -1,0 +1,10 @@
+[2026-05-12T09:03:42+0200] [INFO] Using LDIF /home/marco/cp4ba-projects/cp4ba-installations/configs25.0.1/../configs25.0.1/_cfg-production-ldap-domain-100.ldif
+[2026-05-12T09:03:42+0200] [INFO] Target namespace 'cp4ba-baw-auth-bai'
+
+[2026-05-12T09:03:57+0200] [INFO] Resource 'vuxprod-ldap' in namespace 'cp4ba-baw-auth-bai' is READY
+[2026-05-12T09:03:59+0200] [INFO] Your LDAP service url is 'vuxprod-ldap.cp4ba-baw-auth-bai.svc.cluster.local'
+[2026-05-12T09:03:59+0200] [INFO] LDAP service ports
+[2026-05-12T09:04:01+0200] [INFO] Possible full address (ports may vary)
+[2026-05-12T09:04:01+0200] [INFO]   ldap://vuxprod-ldap.cp4ba-baw-auth-bai.svc.cluster.local:389
+[2026-05-12T09:04:01+0200] [INFO]   ldaps://vuxprod-ldap.cp4ba-baw-auth-bai.svc.cluster.local:636
+[2026-05-12T09:04:01+0200] [INFO] LDAP installed.

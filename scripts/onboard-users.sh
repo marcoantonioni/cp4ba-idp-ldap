@@ -21,6 +21,46 @@ _CLR_YELLOW="\033[1;33m"   #'1;32' is Yellow's ANSI color code
 _CLR_BLUE="\033[0;34m"   #'0;34' is Blue's ANSI color code
 _CLR_NC="\033[0m"
 
+#----------------------------------------------------
+_SCRIPT_PATH="${BASH_SOURCE}"
+while [ -L "${_SCRIPT_PATH}" ]; do
+  _SCRIPT_DIR="$(cd -P "$(dirname "${_SCRIPT_PATH}")" >/dev/null 2>&1 && pwd)"
+  _SCRIPT_PATH="$(readlink "${_SCRIPT_PATH}")"
+  [[ ${_SCRIPT_PATH} != /* ]] && _SCRIPT_PATH="${_SCRIPT_DIR}/${_SCRIPT_PATH}"
+done
+_SCRIPT_PATH="$(readlink -f "${_SCRIPT_PATH}")"
+_SCRIPT_DIR="$(cd -P "$(dirname -- "${_SCRIPT_PATH}")" >/dev/null 2>&1 && pwd)"
+
+#----------------------------------------------------
+if [[ ! -f "$_SCRIPT_DIR/../../cp4ba-logger/scripts/logger.sh" ]]; then
+  echo "ERROR log package not found !"
+  echo "Clone it alongside with other cp4ba-..."
+  echo "use the command: git clone https://github.com/marcoantonioni/cp4ba-logger"
+  exit 1
+fi
+source $_SCRIPT_DIR/../../cp4ba-logger/scripts/logger.sh
+if [[ -z "${CP4BA_LOGGING_ENABLED}" ]]; then 
+  export CP4BA_LOGGING_ENABLED=true
+fi
+if [[ -z "${CP4BA_LOG_LEVEL}" ]]; then 
+  export CP4BA_LOG_LEVEL="INFO"
+fi
+if [[ -z "${CP4BA_LOG_TO_CONSOLE}" ]]; then 
+  export CP4BA_LOG_TO_CONSOLE=true
+fi
+if [[ -z "${CP4BA_LOG_TO_FILE}" ]]; then 
+  export CP4BA_LOG_TO_FILE=false
+fi
+if [[ -z "${CP4BA_LOG_FILE}" ]]; then 
+  export CP4BA_LOG_FILE=""
+fi
+if [[ -z "${CP4BA_LOG_MAX_SIZE}" ]]; then 
+  export CP4BA_LOG_MAX_SIZE=$((10 * 1024 * 1024))
+fi
+if [[ -z "${CP4BA_LOG_BACKUP_COUNT}" ]]; then 
+  export CP4BA_LOG_BACKUP_COUNT=5
+fi
+
 #--------------------------------------------------------
 _INST_TMP_FOLDER="/tmp"
 setTemporaryFolder () {
@@ -40,13 +80,13 @@ setTemporaryFolder () {
     fi
 
     if [[ $_OK -lt 1 ]]; then
-      echo -e "${_CLR_RED}[✗] ERROR '${_CLR_YELLOW}${CP4BA_INST_TMP_FOLDER}${_CLR_RED}' is not a valid temporary folder, check if it is a folder or if you have write permissions !${_CLR_NC}"
-      echo -e "${_CLR_RED}'${_CLR_YELLOW}${CP4BA_INST_TMP_FOLDER}${_CLR_RED}' ${_ERR_MSG_FOLDER}${_ERR_MSG_PERMISSIONS}${_CLR_NC}"
+      log_error "${_CLR_RED}[✗] ERROR '${_CLR_YELLOW}${CP4BA_INST_TMP_FOLDER}${_CLR_RED}' is not a valid temporary folder, check if it is a folder or if you have write permissions !${_CLR_NC}"
+      log_error "${_CLR_RED}'${_CLR_YELLOW}${CP4BA_INST_TMP_FOLDER}${_CLR_RED}' ${_ERR_MSG_FOLDER}${_ERR_MSG_PERMISSIONS}${_CLR_NC}"
       exit 1
     fi
     export _INST_TMP_FOLDER="${CP4BA_INST_TMP_FOLDER}"
   fi
-  echo -e "${_CLR_GREEN}Running with temporary folder '${_CLR_YELLOW}${_INST_TMP_FOLDER}${_CLR_GREEN}'${_CLR_NC}"
+  log_info "${_CLR_GREEN}Running with temporary folder '${_CLR_YELLOW}${_INST_TMP_FOLDER}${_CLR_GREEN}'${_CLR_NC}"
 
 }
 
@@ -82,15 +122,13 @@ waitForResourceCreated () {
 #    echo "resource name: $3"
 #    echo "time to wait: $4"
 
-  echo -n "Wait for resource '$3' in namespace '$1' created"
+  log_info "${_CLR_GREEN}Wait for resource '${_CLR_YELLOW}$3${_CLR_GREEN}' in namespace '${_CLR_YELLOW}$1${_CLR_GREEN}' to be created${_CLR_NC}"
   while true 
   do
       resourceExist $1 $2 $3
       if [ $? -eq 0 ]; then
-          echo -n "."
           sleep $4
       else
-          echo ""
           break
       fi
   done
@@ -102,7 +140,7 @@ getCommonValues () {
   _ROUTE_NAME="cp-console"
   if [ $(oc get routes -n ${_ENVTNS} $_ROUTE_NAME --no-headers 2> /dev/null | wc -l) -lt 1 ]; then
     _ROUTE_NAME="platform-id-provider"
-    echo "Using console route name [${_ROUTE_NAME}]"
+    log_info "${_CLR_GREEN}Using console route name '${_CLR_YELLOW}${_ROUTE_NAME}${_CLR_GREEN}'${_CLR_NC}"
   fi
 
   waitForResourceCreated ${_ENVTNS} "secret" "platform-auth-idp-credentials" 10
@@ -123,9 +161,9 @@ getCommonValues () {
 
   ZEN_TK=$(curl -sk "${PAK_HOST}/v1/preauth/validateAuth" -H "username:${ADMIN_USERNAME}" -H "iam-token: ${IAM_ACCESS_TK}" | jq -r .accessToken)
 
-  echo "Pak console: "${CONSOLE_HOST}
-  echo "Pak cpd console: "${PAK_HOST}
-  echo "Pak administrator: ${ADMIN_USERNAME} / ${ADMIN_PASSW}"
+  log_info "${_CLR_GREEN}Pak console: '${_CLR_YELLOW}${CONSOLE_HOST}${_CLR_GREEN}'${_CLR_NC}"
+  log_info "${_CLR_GREEN}Pak cpd console: '${_CLR_YELLOW}${PAK_HOST}${_CLR_GREEN}'${_CLR_NC}"
+  log_info "${_CLR_GREEN}Pak administrator: ${_CLR_YELLOW}${ADMIN_USERNAME}${_CLR_GREEN} / ${_CLR_YELLOW}${ADMIN_PASSW}${_CLR_NC}"
 }
 
 LIST_OF_USERS=""
@@ -133,7 +171,7 @@ LIST_OF_RECORDS=""
 
 #-------------------------------
 loadUsersFromSecret () {
-  echo "Loading users from secret '${LDAP_DOMAIN}-customldif'"
+  log_info "${_CLR_GREEN}Loading users from secret '${_CLR_YELLOW}${LDAP_DOMAIN}-customldif${_CLR_GREEN}'${_CLR_NC}"
   resourceExist ${TNS} "secret" ${LDAP_DOMAIN}-customldif
   if [ $? -eq 1 ]; then
     LIST_OF_USERS=$(oc get secrets -n ${TNS} ${LDAP_DOMAIN}-customldif -o jsonpath='{.data.ldap_user\.ldif}' | base64 -d | grep "uid:" | sed 's/uid: //g')
@@ -147,14 +185,14 @@ loadUsersFromSecret () {
     rm ${_FNAME} 2>/dev/null
     rm ${_FNAME2} 2>/dev/null
   else
-    echo "ERROR: secret '${LDAP_DOMAIN}-customldif' not found in namespace '${TNS}'"
+    log_error "ERROR secret '${LDAP_DOMAIN}-customldif' not found in namespace '${TNS}'"
     exit 1
   fi
 }
 
 #-------------------------------
 loadUsersFromFile () {
-  echo "Loading users from file '$1'"
+  log_info "${_CLR_GREEN}Loading users from file '${_CLR_YELLOW}$1${_CLR_GREEN}'${_CLR_NC}"
 
   if [[ -f $1 ]];
   then
@@ -170,7 +208,7 @@ loadUsersFromFile () {
     rm ${_FNAME} 2>/dev/null
     rm ${_FNAME2} 2>/dev/null
   else
-      echo "ERROR: Users file "$1" not found !!!"
+      log_error "ERROR Users file '$1' not found !!!"
       exit 1
   fi
 
@@ -212,22 +250,23 @@ onboardUsersAdd () {
   LIST_OF_RECORDS=$( echo ${UPDATED_LIST} | sed 's/.$//g')
 
   if [[ ! -z "${LIST_OF_RECORDS}" ]]; then
-    echo "Adding $tot_users users..."
+    log_info "${_CLR_GREEN}Adding '${_CLR_YELLOW}$tot_users${_CLR_GREEN}' users...${_CLR_NC}"
 
     _DATA='['${LIST_OF_RECORDS}']'
     RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -H 'Content-Type: application/json' \
                  -d $_DATA -X POST "${PAK_HOST}/usermgmt/v1/user/bulk")
     if [[ "${RESPONSE}" == *"error"* ]]; then
-      echo "ERROR adding users"
+      log_error "ERROR adding users"
       echo "${RESPONSE}"
       exit 1
     else
       RES=$(echo $RESPONSE | jq ._messageCode_ | sed 's/"//g')
       if [[ "${RES}" = "Success" ]]; then
-        echo $(echo $RESPONSE | jq '.result | length')" Users operated in mode 'add'"
+        _MSG="${_CLR_GREEN}'${_CLR_YELLOW}"$(echo $RESPONSE | jq '.result | length')"${_CLR_GREEN}' Users operated in mode '${_CLR_YELLOW}add${_CLR_GREEN}'${_CLR_NC}"
+        log_info "$_MSG"
       else
-        MSG=$(echo $RESPONSE | jq .message | sed 's/"//g')
-        echo "ERROR: "${RES}" - "${MSG}
+        _MSG=$(echo $RESPONSE | jq .message | sed 's/"//g')
+        echo "ERROR "${RES}" - "${_MSG}
         echo $RESPONSE
       fi
     fi
@@ -236,7 +275,7 @@ onboardUsersAdd () {
     #echo $_ALL_USERS | jq .
 
   else
-    echo "No users to add."
+    log_warning "No users to add."
   fi
 }
 
@@ -250,22 +289,23 @@ onboardUsersRemove () {
   tot_users=${#ALL_USERS[@]}
 
   if [[ $tot_users -gt 0 ]]; then
-    echo "Removing $tot_users users..."
+    log_info "Removing $tot_users users..."
 
     for _USR in "${ALL_USERS[@]}";
     do
       RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' \
                   -X DELETE "${PAK_HOST}/usermgmt/v1/user/${_USR}")
       if [[ "${RESPONSE}" == *"exception"* ]]; then
-        echo "ERROR removing user '${_USR}' message: "$(echo "${RESPONSE}" | jq .exception)
+        _MSG="ERROR removing user '${_USR}' message: "$(echo "${RESPONSE}" | jq .exception)
+        log_error "$_MSG"
         tot_users=$((tot_users-1))      
       fi
 
     done
-    echo "$tot_users Users operated in mode 'remove'"
+    log_info "$tot_users Users operated in mode 'remove'"
 
   else
-    echo "No users to remove."
+    log_warning "No users to remove."
   fi
 
 }
@@ -276,7 +316,7 @@ if [[ -f ${PROPS_FILE} ]];
 then
     source ${PROPS_FILE}
 else
-    echo "ERROR: Configuration properties file "${PROPS_FILE}" not found !!!"
+    log_error "ERROR Configuration properties file '${PROPS_FILE}' not found !!!"
     exit 1
 fi
 
@@ -284,7 +324,7 @@ fi
 #then
 #    source ${LDAP_FILE}
 #else
-#    echo "ERROR: LDAP properties file "${LDAP_FILE}" not found !!!"
+#    echo "ERROR LDAP properties file "${LDAP_FILE}" not found !!!"
 #    exit 1
 #fi
 
@@ -293,31 +333,31 @@ if [[ "${_TNS}" != "" ]]; then
 fi
 
 if [[ -z "${_ENVTNS}" ]]; then
-  echo -e "${_CLR_RED}ERROR, namespace for environment not set, use -e !${_CLR_GREEN}"
+  log_error "${_CLR_RED}ERROR namespace for environment not set, use -e !${_CLR_GREEN}"
   exit 1
 fi
 
-echo "=============================================================="
-echo "Onboard users from domain ["${LDAP_DOMAIN}"] for namespace ["${TNS}"]"
-echo "=============================================================="
+log_msg "=============================================================="
+log_msg "${_CLR_GREEN}Onboard users from domain '${_CLR_YELLOW}${LDAP_DOMAIN}${_CLR_GREEN}' for namespace '${_CLR_YELLOW}${_ENVTNS}${_CLR_GREEN}'${_CLR_NC}"
+log_msg "=============================================================="
 
 setTemporaryFolder
 
 if [[ "${_LIST_ROLES}" = "true" ]]; then
   getCommonValues
-  echo ""
-  echo "Roles:"
+  log_msg ""
+  log_info "Roles:"
   RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -H 'Content-Type: application/json' \
               "${PAK_HOST}/usermgmt/v1/roles")
   echo $RESPONSE | jq .
 
-  echo ""
-  echo "Groups:"
+  log_msg ""
+  log_info "Groups:"
   RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -H 'Content-Type: application/json' \
               "${PAK_HOST}/usermgmt/v2/groups")
   echo $RESPONSE | jq .
 
-  exit
+  exit 0
 fi
 
 if [[ "${OPERATION_MODE}" = "add" ]] || [[ "${OPERATION_MODE}" = "remove" ]] || [[ "${OPERATION_MODE}" = "remove-and-add" ]]; then
@@ -341,6 +381,6 @@ if [[ "${OPERATION_MODE}" = "add" ]] || [[ "${OPERATION_MODE}" = "remove" ]] || 
   fi 
   exit 0
 else
-  echo "ERROR, set operation mode using -o [add|remove|remove-and-add]"
+  log_error "${_CLR_RED}ERROR set operation mode using -o [add|remove|remove-and-add]${_CLR_NC}"
   exit 1
 fi

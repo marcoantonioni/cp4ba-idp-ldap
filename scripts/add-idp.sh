@@ -2,21 +2,77 @@
 
 #set -euo pipefail
 
+_me=$(basename "$0")
 
 #-------------------------------
 # read installation parameters
 PROPS_FILE=""
 FORCE_INST=false
-_NS="${TNS}"
+_CFG=""
 
-while getopts p:n:f flag
+#--------------------------------------------------------
+_CLR_RED="\033[0;31m"   #'0;31' is Red's ANSI color code
+_CLR_GREEN="\033[0;32m"   #'0;32' is Green's ANSI color code
+_CLR_YELLOW="\033[1;33m"   #'1;32' is Yellow's ANSI color code
+_CLR_BLUE="\033[0;34m"   #'0;34' is Blue's ANSI color code
+_CLR_NC="\033[0m"
+
+#----------------------------------------------------
+_SCRIPT_PATH="${BASH_SOURCE}"
+while [ -L "${_SCRIPT_PATH}" ]; do
+  _SCRIPT_DIR="$(cd -P "$(dirname "${_SCRIPT_PATH}")" >/dev/null 2>&1 && pwd)"
+  _SCRIPT_PATH="$(readlink "${_SCRIPT_PATH}")"
+  [[ ${_SCRIPT_PATH} != /* ]] && _SCRIPT_PATH="${_SCRIPT_DIR}/${_SCRIPT_PATH}"
+done
+_SCRIPT_PATH="$(readlink -f "${_SCRIPT_PATH}")"
+_SCRIPT_DIR="$(cd -P "$(dirname -- "${_SCRIPT_PATH}")" >/dev/null 2>&1 && pwd)"
+
+#----------------------------------------------------
+if [[ ! -f "$_SCRIPT_DIR/../../cp4ba-logger/scripts/logger.sh" ]]; then
+  echo "Error, log package not found !"
+  echo "Clone it alongside with other cp4ba-..."
+  echo "use the command: git clone https://github.com/marcoantonioni/cp4ba-logger"
+  exit 1
+fi
+source $_SCRIPT_DIR/../../cp4ba-logger/scripts/logger.sh
+if [[ -z "${CP4BA_LOGGING_ENABLED}" ]]; then 
+  export CP4BA_LOGGING_ENABLED=true
+fi
+if [[ -z "${CP4BA_LOG_LEVEL}" ]]; then 
+  export CP4BA_LOG_LEVEL="INFO"
+fi
+if [[ -z "${CP4BA_LOG_TO_CONSOLE}" ]]; then 
+  export CP4BA_LOG_TO_CONSOLE=true
+fi
+if [[ -z "${CP4BA_LOG_TO_FILE}" ]]; then 
+  export CP4BA_LOG_TO_FILE=false
+fi
+if [[ -z "${CP4BA_LOG_FILE}" ]]; then 
+  export CP4BA_LOG_FILE=""
+fi
+if [[ -z "${CP4BA_LOG_MAX_SIZE}" ]]; then 
+  export CP4BA_LOG_MAX_SIZE=$((10 * 1024 * 1024))
+fi
+if [[ -z "${CP4BA_LOG_BACKUP_COUNT}" ]]; then 
+  export CP4BA_LOG_BACKUP_COUNT=5
+fi
+
+while getopts p:c:f flag
 do
     case "${flag}" in
         f) FORCE_INST=true;;
         p) PROPS_FILE=${OPTARG};;
-        n) _NS=${OPTARG};;
+        c) _CFG=${OPTARG};;
     esac
 done
+
+usage () {
+  echo ""
+  echo "usage: $_me
+    -c full-path-to-environment-config-file
+    -p full-path-to-ldap-config-file
+    -f (optional)force-installation"
+}
 
 #-------------------------------
 resourceExist () {
@@ -37,15 +93,13 @@ waitForResourceCreated () {
 #    echo "resource name: $3"
 #    echo "time to wait: $4"
 
-  echo -n "Wait for resource '$3' in namespace '$1' created"
+  log_info "${_CLR_GREEN}Wait for resource '${_CLR_YELLOW}$3${_CLR_GREEN}' in namespace '${_CLR_YELLOW}$1${_CLR_GREEN}' to be created${_CLR_NC}"
   while true 
   do
       resourceExist $1 $2 $3
       if [ $? -eq 0 ]; then
-          echo -n "."
           sleep $4
       else
-          echo ""
           break
       fi
   done
@@ -57,7 +111,7 @@ getCommonValues () {
   _ROUTE_NAME="cp-console"
   if [ $(oc get routes -n ${TNS} $_ROUTE_NAME --no-headers 2> /dev/null | wc -l) -lt 1 ]; then
     _ROUTE_NAME="platform-id-provider"
-    echo "Using console route name [${_ROUTE_NAME}]"
+    log_info "${_CLR_GREEN}Using console route name [${_CLR_YELLOW}${_ROUTE_NAME}${_CLR_GREEN}]${_CLR_NC}"
   fi
 
   waitForResourceCreated ${TNS} "secret" "platform-auth-idp-credentials" 10
@@ -74,9 +128,9 @@ getCommonValues () {
       -d "grant_type=password&username=${ADMIN_USERNAME}&password=${ADMIN_PASSW}&scope=openid" \
       ${CONSOLE_HOST}/idprovider/v1/auth/identitytoken | jq -r .access_token)
 
-  echo "Pak console: "${CONSOLE_HOST}
-  echo "Pak administrator: ${ADMIN_USERNAME} / ${ADMIN_PASSW}"
-  echo ""
+  log_info "${_CLR_GREEN}Pak console: ${_CLR_YELLOW}${CONSOLE_HOST}${_CLR_NC}"
+  log_info "${_CLR_GREEN}Pak administrator: ${_CLR_YELLOW}${ADMIN_USERNAME} / ${ADMIN_PASSW}${_CLR_NC}"
+  log_msg ""
 }
 
 #-------------------------------
@@ -128,11 +182,11 @@ configSCIM () {
               -d $SCIM_DATA "${CONSOLE_HOST}/idmgmt/identity/api/v1/scim/attributemappings" | jq .)
 
   if [[ "${RESPONSE}" == *"error"* ]]; then
-    echo "ERROR configuring SCIM attributes for [${IDP_NAME}]"
-    echo "${RESPONSE}"
-    exit
+    log_error "ERROR configuring SCIM attributes for [${IDP_NAME}]"
+    log_msg "${RESPONSE}"
+    exit 1
   else
-    echo "SCIM attributes for IDP [${IDP_NAME}] configured"
+    log_info "${_CLR_GREEN}SCIM attributes for IDP [${_CLR_YELLOW}${IDP_NAME}${_CLR_GREEN}] configured"
   fi
 
 }
@@ -149,20 +203,21 @@ createIdp () {
 
   if [[ "${RESPONSE}" == *"error"* ]]; then
     if [[ "${RESPONSE}" == *"Already exists"* ]]; then
-      echo -e "ERROR configuring [${IDP_NAME}], already configured, use -f to force a new installation"
+      log_error "ERROR configuring [${IDP_NAME}], already configured, use -f to force a new installation"
     else
-      echo -e "ERROR configuring [${IDP_NAME}]\n${RESPONSE}"
+      log_error "ERROR configuring [${IDP_NAME}]"
+      log_msg "${RESPONSE}"
 
       cat ./${IDP_NAME}.json
 
     fi
-    exit
+    exit 1
   else
     configSCIM
-    echo "IDP [${IDP_NAME}] configured"    
+    log_info "${_CLR_GREEN}IDP [${_CLR_YELLOW}${IDP_NAME}${_CLR_GREEN}] configured.${_CLR_NC}"    
   fi
 
-  rm ./${IDP_NAME}.json
+  rm ./${IDP_NAME}.json 
 }
 
 getUID () {
@@ -181,15 +236,15 @@ deleteIDP () {
   IDP_UID=$(getUID)
 
   if [[ -z "${IDP_UID}" ]]; then
-    echo "IDP "${IDP_NAME}" not found in namespace "${TNS}
+    log_warning "IDP '${IDP_NAME}' not found in namespace ${TNS}"
   else
     RESPONSE=$(curl -sk -X DELETE "${CONSOLE_HOST}/idprovider/v3/auth/idsource/"${IDP_UID} -H "Authorization: Bearer ${IAM_ACCESS_TK}")
     if [[ "${RESPONSE}" == *"success"* ]]; then
-      echo "Deleted IDP "${IDP_NAME}" / "${IDP_UID}
+      log_info "Deleted IDP "${IDP_NAME}" / "${IDP_UID}
     else
-      echo "ERROR deleting ${IDP_NAME}"
+      log_error "ERROR deleting ${IDP_NAME}"
       echo ${RESPONSE} | jq .
-      exit
+      exit 1
     fi
   fi
 }
@@ -214,8 +269,8 @@ showIDPList () {
 verifyIDPAlreadyPresent () {
   if [[ "${IDP_NAMES}" == *"${IDP_NAME}"* ]]; then
     if [ "${FORCE_INST}" = false ]; then    
-      echo -e "ERROR configuring [${IDP_NAME}], already configured, use -f to force a new installation"
-      exit
+      log_error "ERROR configuring [${IDP_NAME}], already configured, use -f to force a new installation"
+      exit 1
     else
       deleteIDP
     fi
@@ -223,19 +278,52 @@ verifyIDPAlreadyPresent () {
 }
 
 #-------------------------------
+checkParams() {
 
-if [[ -f ${PROPS_FILE} ]];
-then
-    source ${PROPS_FILE}
+if [[ ! -z "${_CFG}" ]]; then
+  if [[ -f "${_CFG}" ]]; then
+    source ${_CFG}
+  else
+    log_error "ERROR: Configuration file "${_CFG}" not found !!!"
+    usage
+    exit 1
+  fi
 else
-    echo "ERROR: Properties file "${PROPS_FILE}" not found !!!"
-    exit
+  log_error "ERROR: Configuration file -c not set !!!"
+  usage
+  exit 1
 fi
 
-echo "======================================================================"
-echo "Configuring IDP ["${IDP_NAME}"] for namespace ["${TNS}"]"
-echo "======================================================================"
-echo ""
+if [[ -z "${PROPS_FILE}" ]]; then
+  log_error "ERROR: 'PROPS_FILE' not set."
+  usage
+  exit 1
+fi
+if [[ -f "${PROPS_FILE}" ]]; then
+    source ${PROPS_FILE}
+else
+    log_error "ERROR: Properties file "${PROPS_FILE}" not found !!!"
+    usage
+    exit 1
+fi
+
+if [ -z "${TNS}" ]; then
+    log_error "ERROR: namespace not set"
+    usage
+    exit 1
+fi
+
+}
+#-------------------------------
+
+checkParams
+
+log_msg "======================================================================"
+log_msg "Configuring IDP"
+log_msg "======================================================================"
+log_msg ""
+
+log_info "${_CLR_GREEN}IDP name [${_CLR_YELLOW}${IDP_NAME}${_CLR_GREEN}] namespace [${_CLR_YELLOW}${TNS}${_CLR_GREEN}]${_CLR_NC}"
 
 getCommonValues
 getIDPInfos
@@ -243,5 +331,5 @@ verifyIDPAlreadyPresent
 createIdp
 getIDPInfos
 showIDPList
-echo "===>> !!! Remember to restart the BAW server to also see the "Groups" carried by the new IDP."
+log_warning "===>> !!! Remember to restart the BAW server to also see the 'Groups' carried by the new IDP."
 

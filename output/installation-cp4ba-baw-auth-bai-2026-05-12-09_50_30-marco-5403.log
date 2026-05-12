@@ -1,0 +1,15 @@
+======================================================================
+Configuring IDP
+======================================================================
+
+[2026-05-12T09:50:30+0200] [INFO] IDP name [vuxprod] namespace [cp4ba-baw-auth-bai]
+[2026-05-12T09:50:32+0200] [INFO] Using console route name [platform-id-provider]
+[2026-05-12T09:50:32+0200] [INFO] Wait for resource 'platform-auth-idp-credentials' in namespace 'cp4ba-baw-auth-bai' to be created
+[2026-05-12T09:50:39+0200] [INFO] Pak console: https://cpd-cp4ba-baw-auth-bai.apps.itz-sj74f4.infra01-lb.syd05.techzone.ibm.com
+[2026-05-12T09:50:39+0200] [INFO] Pak administrator: cpadmin / jFG6g72ksEUHC0CYORqlpUB8Njg3KeUa
+
+[2026-05-12T09:50:41+0200] [ERROR] ERROR configuring [vuxprod]
+{
+  "status": "error",
+  "message": "An LDAP with the same name or baseDN exists"
+}
