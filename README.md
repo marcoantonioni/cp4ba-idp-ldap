@@ -2,12 +2,13 @@
 
 Utilities for IBM Cloud Pak® for Business Automation
 
-<i>Last update: 2026-05-05</i>
+<i>Last update: 2026-05-12</i>
 
 This repository contains a series of examples and tools for creating and configuring a containerized LDAP server and configuring federated IDP in a IBM Cloud Pak deployed using Foundational services v4.x
 
 ## Change Log
 
+2026-05-12: Added cp4ba-logger dependency
 2026-05-05: Added support for db and ldap in different namespaces (onboard-users.sh)
 2025-03-08: Fixed createIDPConfiguration (ldap_groupidmap)
 2024-01-29: Changed 'sed -i' command for compatibility with Darwin platform
@@ -110,9 +111,9 @@ LDAP_PAGING_SIZE="1000"
 
 ```
 # install openldap deployment and wait for pod ready
-./scripts/add-ldap.sh -p ./configs/_cfg1-ldap-domain.properties
+./scripts/add-ldap.sh -p ldap-config.properties -n target-namespace -c environment-config-file.properties
 
-./scripts/add-ldap.sh -p ./configs/_cfg-production-ldap-domain.properties
+./scripts/add-ldap.sh -p ldap-config.properties -n target-namespace -c environment-config-file.properties
 
 # [optional] install phpadmin tool, use TLS cert from secret 'icp4adeploy-root-ca' in namespace 'cp4ba'
 
@@ -120,51 +121,49 @@ LDAP_PAGING_SIZE="1000"
 
 ./scripts/add-phpadmin.sh -p ./configs/_cfg-production-ldap-domain.properties -s common-web-ui-cert -w common-web-ui-cert -n cp4ba-federated-wfps
 
-# NO ./scripts/add-phpadmin.sh -p ./configs/_cfg1-ldap-domain.properties -s icp4adeploy-root-ca -w common-web-ui-cert -n cp4ba
-
 ```
 
 ## IDP installation and configuration commands
 Remember to restart the BAW server to also see the "Groups" carried by the new IDP.
 ```
-./scripts/add-idp.sh -p ./configs/_cfg1-idp.properties
+./scripts/add-idp.sh -p ./configs/_cfg1-idp.properties -c environment-config-file.properties
 ```
 
 ## Users onboarding into Pak environment commands
 ```
 # add users (list from ldif secret)
-./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -o add -s
+./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -n target-namespace -e environment-namespace -o add -s
 
 # add users (list from file)
-./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -o add -u ../configs/file-of-users
+./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -n target-namespace -e environment-namespace -o add -u ../configs/file-of-users
 
 
 # remove users from ldif secret
-./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -o remove -s
+./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -n target-namespace -e environment-namespace -o remove -s
 
 # remove users from users file
-./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -o remove -u ../configs/file-of-users
+./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -n target-namespace -e environment-namespace -o remove -u ../configs/file-of-users
 ```
 
 ## List Roles and Groups
 
 ```
-./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -r
+./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -n target-namespace -e environment-namespace -r
 ```
 
 ## LDAP deletion commands
 ```
 # remove phpadmin tool
-./scripts/remove-phpadmin.sh -p ./configs/_cfg1-ldap-domain.properties
+./scripts/remove-phpadmin.sh -p ./configs/_cfg1-ldap-domain.properties -n target-namespace
 
 # remove openldap deployment
-./scripts/remove-ldap.sh -p ./configs/_cfg1-ldap-domain.properties
+./scripts/remove-ldap.sh -p ./configs/_cfg1-ldap-domain.properties -n target-namespace
 
 ```
 
 ## IDP deletion commands
 ```
-./scripts/remove-idp.sh -p ./configs/_cfg1-idp.properties
+./scripts/remove-idp.sh -p ./configs/_cfg1-idp.properties -n target-namespace
 ```
 
 ## References
