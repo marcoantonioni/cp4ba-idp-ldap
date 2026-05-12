@@ -1,7 +1,0 @@
-======================================================================
-Configuring IDP
-======================================================================
-
-[2026-05-12T15:00:30+0200] [INFO] IDP name [vuxprod] namespace [cp4ba-baw-auth-bai]
-[2026-05-12T15:00:33+0200] [INFO] Using console route name [platform-id-provider]
-[2026-05-12T15:00:33+0200] [INFO] Wait for resource 'platform-auth-idp-credentials' in namespace 'cp4ba-baw-auth-bai' to be created
