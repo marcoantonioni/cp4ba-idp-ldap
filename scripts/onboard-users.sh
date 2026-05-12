@@ -255,6 +255,7 @@ onboardUsersAdd () {
     _DATA='['${LIST_OF_RECORDS}']'
     RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -H 'Content-Type: application/json' \
                  -d $_DATA -X POST "${PAK_HOST}/usermgmt/v1/user/bulk")
+
     if [[ "${RESPONSE}" == *"error"* ]]; then
       log_error "ERROR adding users"
       echo "${RESPONSE}"
@@ -266,8 +267,8 @@ onboardUsersAdd () {
         log_info "$_MSG"
       else
         _MSG=$(echo $RESPONSE | jq .message | sed 's/"//g')
-        echo "ERROR "${RES}" - "${_MSG}
-        echo $RESPONSE
+        echo "ERROR CODE [${RES}] - ERROR MSG [${_MSG}]"
+        echo "ERROR PAYLOAD: ${RESPONSE}"
       fi
     fi
 
