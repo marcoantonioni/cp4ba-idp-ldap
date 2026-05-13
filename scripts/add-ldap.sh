@@ -442,7 +442,6 @@ waitForDeploymentReady () {
     REPLICAS=$(oc get deployment -n $1 $2 -o jsonpath="{.status.replicas}")
     READY_REPLICAS=$(oc get deployment -n $1 $2 -o jsonpath="{.status.readyReplicas}")
     if [ "${REPLICAS}" = "${READY_REPLICAS}" ]; then
-      log_msg ""
       # log_info "Resource '$2' in namespace '$1' is READY"
       break
     else
