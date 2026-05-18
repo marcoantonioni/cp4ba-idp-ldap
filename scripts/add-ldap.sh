@@ -442,7 +442,7 @@ waitForDeploymentReady () {
     REPLICAS=$(oc get deployment -n $1 $2 -o jsonpath="{.status.replicas}")
     READY_REPLICAS=$(oc get deployment -n $1 $2 -o jsonpath="{.status.readyReplicas}")
     if [ "${REPLICAS}" = "${READY_REPLICAS}" ]; then
-      # log_info "Resource '$2' in namespace '$1' is READY"
+      # log_info "Resource '$2' in namespace '$1' is ready"
       break
     else
       ((_seconds=_seconds+1))
@@ -479,7 +479,7 @@ log_info "Your LDAP service url is '${_CLR_YELLOW}"${LDAP_SVC_NAME}.${TNS}.svc.c
 # log_info "LDAP service ports"
 # oc get service -n ${TNS} ${LDAP_SVC_NAME} -o yaml | grep port:
 
-log_info "Full addresses"
-log_info "  ${_CLR_YELLOW}ldap://${LDAP_SVC_NAME}.${TNS}.svc.cluster.local:389${_CLR_NC}"
-log_info "  ${_CLR_YELLOW}ldaps://${LDAP_SVC_NAME}.${TNS}.svc.cluster.local:636${_CLR_NC}"
+log_debug "Full addresses"
+log_debug "  ${_CLR_YELLOW}ldap://${LDAP_SVC_NAME}.${TNS}.svc.cluster.local:389${_CLR_NC}"
+log_debug "  ${_CLR_YELLOW}ldaps://${LDAP_SVC_NAME}.${TNS}.svc.cluster.local:636${_CLR_NC}"
 log_info "LDAP installed."
