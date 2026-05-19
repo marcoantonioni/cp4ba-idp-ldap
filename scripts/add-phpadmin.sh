@@ -324,10 +324,9 @@ fi
 
 }
 
-log_msg "===================================="
-log_msg "Installing LDAP PHPAdmin"
-log_msg "===================================="
-log_msg "${_CLR_GREEN}Namespace '${_CLR_YELLOW}${SECRET_NAMESPACE}${_CLR_GREEN}'${_CLR_NC}"
+log_msg "=============================================================="
+log_info "Installing LDAP PHPAdmin"
+log_info "${_CLR_GREEN}Namespace '${_CLR_YELLOW}${SECRET_NAMESPACE}${_CLR_GREEN}'${_CLR_NC}"
 if [[ -z "${PROPS_FILE}" ]]; then
   log_error "ERROR: variable 'PROPS_FILE' not defined"
   exit 1

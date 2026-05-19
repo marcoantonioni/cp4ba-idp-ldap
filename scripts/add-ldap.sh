@@ -456,7 +456,6 @@ waitForDeploymentReady () {
 
 log_msg "=============================================================="
 log_info "${_CLR_GREEN}Installing LDAP${_CLR_NC}"
-log_msg "=============================================================="
 
 checkParams
 
