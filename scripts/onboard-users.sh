@@ -339,8 +339,7 @@ if [[ -z "${_ENVTNS}" ]]; then
 fi
 
 log_msg "=============================================================="
-log_msg "${_CLR_GREEN}Onboard users from domain '${_CLR_YELLOW}${LDAP_DOMAIN}${_CLR_GREEN}' for namespace '${_CLR_YELLOW}${_ENVTNS}${_CLR_GREEN}'${_CLR_NC}"
-log_msg "=============================================================="
+log_info "${_CLR_GREEN}Onboard users from domain '${_CLR_YELLOW}${LDAP_DOMAIN}${_CLR_GREEN}' for namespace '${_CLR_YELLOW}${_ENVTNS}${_CLR_GREEN}'${_CLR_NC}"
 
 setTemporaryFolder
 
