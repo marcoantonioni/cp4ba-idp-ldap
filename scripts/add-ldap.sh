@@ -1,5 +1,14 @@
 #!/bin/bash
 
+export PVC_LDIF_STORAGE_SIZE="20Mi"
+export PVC_NAME="pvc-openldap-ldif"
+export STORAGE_CLASS="ocs-external-storagecluster-cephfs"
+export POD_BB1="ldif-tool-1"
+export POD_BB2="ldif-tool-2"
+export MOUNT_PATH="/customldif"
+#export LDIF_FILENAME="ldap_user.ldif"
+export CTR_IMAGE="alpine:latest"
+
 #set -euo pipefail
 
 _me=$(basename "$0")
@@ -150,19 +159,6 @@ if [[ -z "${LDAP_LDIF_NAME}" ]]; then
   usage
   exit 1
 fi
-if [[ -f "${LDAP_LDIF_NAME}" ]]; then
-  log_info "Using LDIF ${LDAP_LDIF_NAME}"
-else
-  _CFG_PATH=$(dirname "$_CFG")
-  LDAP_LDIF_NAME="${_CFG_PATH}/${LDAP_LDIF_NAME}"
-  if [[ -f "${LDAP_LDIF_NAME}" ]]; then
-    log_info "Using LDIF ${LDAP_LDIF_NAME}"
-  else
-    log_error "ERROR: file '${LDAP_LDIF_NAME}' not found."
-    usage
-    exit 1
-  fi
-fi
 
 if [ -z "${TNS}" ]; then
     log_error "ERROR: TNS, namespace not set"
@@ -170,12 +166,18 @@ if [ -z "${TNS}" ]; then
     exit 1
 fi
 
-if [ -z "${ENTITLEMENT_KEY}" ]; then
-    log_error "ERROR: ENTITLEMENT_KEY, key not set"
-    usage
-    exit 1
-fi
+}
 
+checkLDIFFile () {
+  if [[ ! -f "${LDAP_LDIF_NAME}" ]]; then
+    _CFG_PATH=$(dirname "$_CFG")
+    LDAP_LDIF_NAME="${_CFG_PATH}/${LDAP_LDIF_NAME}"
+    if [[ ! -f "${LDAP_LDIF_NAME}" ]]; then
+      log_error "ERROR: file '${LDAP_LDIF_NAME}' not found."
+      usage
+      exit 1
+    fi
+  fi
 }
 
 #-------------------------------
@@ -193,9 +195,14 @@ createSecrets() {
     oc create secret generic -n ${TNS} ${LDAP_DOMAIN}-secret --from-literal=LDAP_ADMIN_PASSWORD=passw0rd --from-literal=LDAP_CONFIG_PASSWORD=passw0rd 2> /dev/null 1> /dev/null
   fi
 
-  resourceExist secret ${LDAP_DOMAIN}-customldif ${TNS}
-  if [ $? -eq 0 ]; then
-    oc create secret generic -n ${TNS} ${LDAP_DOMAIN}-customldif --from-file=ldap_user.ldif=${LDAP_LDIF_NAME} 2> /dev/null 1> /dev/null
+  if [[ -z "${CP4BA_INST_LDAP_USE_VOLUME}" ]] || [[ "${CP4BA_INST_LDAP_USE_VOLUME}" = "false" ]]; then
+    resourceExist secret ${LDAP_DOMAIN}-customldif ${TNS}
+    if [ $? -eq 0 ]; then
+      oc create secret generic -n ${TNS} ${LDAP_DOMAIN}-customldif --from-file=ldap_user.ldif=${LDAP_LDIF_NAME} 2> /dev/null 1> /dev/null
+    fi
+  else
+    oc delete secret generic -n ${TNS} ${LDAP_DOMAIN}-customldif 2> /dev/null 1> /dev/null
+    oc create secret generic -n ${TNS} ${LDAP_DOMAIN}-customldif --from-literal=ldap_user.ldif='users from file' 2> /dev/null 1> /dev/null
   fi
 }
 
@@ -242,14 +249,25 @@ fi
 #-------------------------------
 createDeployment() {
 
-resourceExist deployment ${LDAP_DOMAIN}-ldap ${TNS}
-if [ $? -eq 0 ]; then
+  oc delete deployment -n ${TNS} ${LDAP_DOMAIN}-ldap 2>/dev/null 1>/dev/null
+  timeout=300
+  counter=0
+  while [ $counter -lt $timeout ]; do
+    if ! oc get deployment -n ${TNS} ${LDAP_DOMAIN}-ldap &>/dev/null; then
+        break
+    fi
+    sleep 2
+    counter=$((counter + 2))
+  done
 
-cat << EOF | oc create -n ${TNS} -f - 2> /dev/null 1> /dev/null
+  log_info "${_CLR_GREEN}Creating deployment '${_CLR_YELLOW}${LDAP_DOMAIN}-ldap${_CLR_GREEN}' using LDIF configuration via Secret '${_CLR_YELLOW}${LDAP_DOMAIN}-customldif${_CLR_GREEN}'${_CLR_NC}"
+
+cat << EOF | oc create -f - 2> /dev/null 1> /dev/null
 kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: ${LDAP_DOMAIN}-ldap
+  namespace: ${TNS}
   labels:
     app: ${LDAP_DOMAIN}-ldap
 spec:
@@ -424,9 +442,308 @@ spec:
           emptyDir: {}
 EOF
 
-oc expose deployment -n ${TNS} ${LDAP_DOMAIN}-ldap 2> /dev/null 1> /dev/null
+  oc expose deployment -n ${TNS} ${LDAP_DOMAIN}-ldap 2> /dev/null 1> /dev/null
+}
 
-fi
+createPVCForLDIF () {
+  log_info "${_CLR_GREEN}Creating Persistent Volume Claim '${_CLR_YELLOW}${PVC_NAME}${_CLR_GREEN}'"
+
+  oc delete pvc -n ${TNS} ${PVC_NAME} 2>/dev/null 1>/dev/null
+  timeout=300
+  counter=0
+  while [ $counter -lt $timeout ]; do
+    if ! oc get pvc -n ${TNS} ${PVC_NAME} &>/dev/null; then
+        break
+    fi
+    sleep 2
+    counter=$((counter + 2))
+  done
+
+cat <<EOF | oc apply -f - 2>/dev/null 1>/dev/null
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ${PVC_NAME}
+  namespace: ${TNS}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: ${PVC_LDIF_STORAGE_SIZE}
+  storageClassName: ${STORAGE_CLASS}
+EOF
+
+  #log_info "Waiting for PVC to be bound..."
+  timeout=300
+  counter=0
+  while [ $counter -lt $timeout ]; do
+    status=$(oc get pvc -n ${TNS} ${PVC_NAME} -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
+    if [ "$status" == "Bound" ]; then
+      break
+    fi
+    sleep 2
+    counter=$((counter + 2))
+  done
+
+  if [ "$status" != "Bound" ]; then
+    log_error "ERROR: PVC did not bind within $timeout seconds"
+    exit 1
+  fi
+
+}
+
+loadLDIFToPVC () {
+  log_info "${_CLR_GREEN}Loading LDIF file in PVC '${_CLR_YELLOW}${PVC_NAME}${_CLR_GREEN}'"
+
+cat <<EOF | oc apply -f - 2>/dev/null 1>/dev/null
+apiVersion: v1
+kind: Pod
+metadata:
+  name: $POD_BB1
+  namespace: ${TNS}
+spec:
+  serviceAccountName: ibm-cp4ba-anyuid
+  serviceAccount: ibm-cp4ba-anyuid
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+    fsGroup: 0
+  containers:
+  - name: $POD_BB1
+    image: $CTR_IMAGE
+    volumeMounts:
+    - name: ldif-storage
+      mountPath: $MOUNT_PATH
+    command: ['/bin/sh', '-c', 'sleep infinity']
+  volumes:
+  - name: ldif-storage
+    persistentVolumeClaim:
+      claimName: ${PVC_NAME}
+EOF
+
+  oc wait --for=condition=Ready -n ${TNS} pod/$POD_BB1 --timeout=300s 2>/dev/null 1>/dev/null
+
+  oc exec -n ${TNS} $POD_BB1 -- mkdir -p $MOUNT_PATH 2>/dev/null 1>/dev/null
+  oc cp ${LDAP_LDIF_NAME} -n ${TNS} ${POD_BB1}:${MOUNT_PATH}/ldap_user.ldif 2>/dev/null 1>/dev/null
+  oc delete pod -n ${TNS} $POD_BB1 2>/dev/null 1>/dev/null
+  #timeout=300
+  #counter=0
+  #while [ $counter -lt $timeout ]; do
+  #  if ! oc get pod -n ${TNS} $POD_BB1 &>/dev/null; then
+  #      break
+  #  fi
+  #  sleep 2
+  #  counter=$((counter + 2))
+  #done
+#
+  #if oc get pod -n ${TNS} $POD_BB1 &>/dev/null; then
+  #  log_warning "${_CLR_GREEN}Pod '${_CLR_YELLOW}${POD_BB1}${_CLR_GREEN}' not deleted."
+  #fi
+}
+
+setupLDIF () {
+  createPVCForLDIF
+  loadLDIFToPVC
+}
+
+createDeploymentVolume () {
+
+  oc delete deployment -n ${TNS} ${LDAP_DOMAIN}-ldap 2>/dev/null 1>/dev/null
+  timeout=300
+  counter=0
+  while [ $counter -lt $timeout ]; do
+    if ! oc get deployment -n ${TNS} ${LDAP_DOMAIN}-ldap &>/dev/null; then
+        break
+    fi
+    sleep 2
+    counter=$((counter + 2))
+  done
+
+  setupLDIF
+
+  log_info "${_CLR_GREEN}Creating deployment '${_CLR_YELLOW}${LDAP_DOMAIN}-ldap${_CLR_GREEN}' using LDIF configuration via PVC '${_CLR_YELLOW}${PVC_NAME}${_CLR_GREEN}'${_CLR_NC}"
+
+cat << EOF | oc create -f - 2> /dev/null 1> /dev/null
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: ${LDAP_DOMAIN}-ldap
+  namespace: ${TNS}
+  labels:
+    app: ${LDAP_DOMAIN}-ldap
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${LDAP_DOMAIN}-ldap
+  template:
+    metadata:
+      labels:
+        app: ${LDAP_DOMAIN}-ldap
+    spec:
+      restartPolicy: Always
+      initContainers:
+        - name: openldap-init-ldif
+          image: 'cp.icr.io/cp/cp4a/demo/openldap:1.5.0.2'
+          command:
+            - sh
+            - '-c'
+            - cp /customldif/* /ldifworkingdir
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - name: customldif
+              mountPath: /customldif/ldap_user.ldif
+              subPath: ldap_user.ldif
+            - name: ldifworkingdir
+              mountPath: /ldifworkingdir
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+        - resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          terminationMessagePath: /dev/termination-log
+          name: folder-prepare-container
+          command:
+            - /bin/bash
+            - '-ecx'
+            - >
+              rm -rf /etc-folder/* && cp -rp /etc/* /etc-folder || true && rm
+              -rf /var-lib-folder/* && cp -rp /var/lib/* /var-lib-folder || true
+              && (rm -rf /usr-folder/* && cp -rp /usr/sbin/* /usr-folder && rm
+              -rf /var-cache-folder/* && cp -rp /var/cache/debconf/*
+              /var-cache-folder || true) && rm -rf /container-run-folder/* && cp
+              -rp /container/* /container-run-folder || true
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: usr-folder-pvc
+              mountPath: usr-folder
+            - name: var-cache-folder-pvc
+              mountPath: var-cache-folder
+            - name: container-run-folder-pvc
+              mountPath: container-run-folder
+            - name: etc-ldap-folder-pvc
+              mountPath: etc-folder
+            - name: var-lib-folder-pvc
+              mountPath: var-lib-folder
+          terminationMessagePolicy: File
+          image: 'cp.icr.io/cp/cp4a/demo/openldap:1.5.0.2'
+      serviceAccountName: ibm-cp4ba-anyuid
+      terminationGracePeriodSeconds: 30
+      securityContext: {}
+      containers:
+        - resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          readinessProbe:
+            tcpSocket:
+              port: ldap-port
+            initialDelaySeconds: 20
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 10
+          terminationMessagePath: /dev/termination-log
+          name: ${LDAP_DOMAIN}-ldap
+          livenessProbe:
+            tcpSocket:
+              port: ldap-port
+            initialDelaySeconds: 20
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 10
+          ports:
+            - name: ldap-port
+              containerPort: 389
+              protocol: TCP
+            - name: ssl-ldap-port
+              containerPort: 636
+              protocol: TCP
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/ldap
+              subPath: data
+            - name: data
+              mountPath: /etc/ldap/slapd.d
+              subPath: config-data
+            - name: ldifworkingdir
+              mountPath: /container/service/slapd/assets/config/bootstrap/ldif/custom
+            - name: etc-ldap-folder-pvc
+              mountPath: /etc
+            - name: temp-pvc
+              mountPath: /tmp
+            - name: usr-folder-pvc
+              mountPath: /usr/sbin
+            - name: var-backup-folder-pvc
+              mountPath: /var/backups/slapd-2.4.57+dfsg-3~bpo10+1
+            - name: var-lib-folder-pvc
+              mountPath: /var/lib
+            - name: var-cache-folder-pvc
+              mountPath: /var/cache/debconf
+            - name: container-run-folder-pvc
+              mountPath: /container
+          terminationMessagePolicy: File
+          envFrom:
+            - configMapRef:
+                name: ${LDAP_DOMAIN}-env
+            - secretRef:
+                name: ${LDAP_DOMAIN}-secret
+          image: 'cp.icr.io/cp/cp4a/demo/openldap:1.5.0.2'
+          args:
+            - '--copy-service'
+      serviceAccount: ibm-cp4ba-anyuid
+      volumes:
+        - name: customldif
+          persistentVolumeClaim:
+            claimName: ${PVC_NAME}
+        - name: ldifworkingdir
+          emptyDir: {}
+        - name: certs
+          emptyDir:
+            medium: Memory
+        - name: data
+          emptyDir: {}
+        - name: etc-ldap-folder-pvc
+          emptyDir: {}
+        - name: temp-pvc
+          emptyDir: {}
+        - name: usr-folder-pvc
+          emptyDir: {}
+        - name: var-backup-folder-pvc
+          emptyDir: {}
+        - name: var-cache-folder-pvc
+          emptyDir: {}
+        - name: var-lib-folder-pvc
+          emptyDir: {}
+        - name: container-run-folder-pvc
+          emptyDir: {}
+EOF
+
+oc expose deployment -n ${TNS} ${LDAP_DOMAIN}-ldap 2> /dev/null 1> /dev/null
 
 }
 
@@ -458,8 +775,11 @@ log_msg "=============================================================="
 log_info "${_CLR_GREEN}Installing LDAP${_CLR_NC}"
 
 checkParams
+checkLDIFFile
 
 log_info "${_CLR_GREEN}Target namespace '${_CLR_YELLOW}${TNS}${_CLR_GREEN}'${_CLR_NC}"
+log_info "${_CLR_GREEN}Using LDIF file '${_CLR_YELLOW}${LDAP_LDIF_NAME}${_CLR_GREEN}'"
+
 createNamespace
 
 createEntitlementSecrets
@@ -468,7 +788,12 @@ createSecrets
 
 createServiceAccountAndCfgMap
 
-createDeployment
+# 20260605
+if [[ -z "${CP4BA_INST_LDAP_USE_VOLUME}" ]] || [[ "${CP4BA_INST_LDAP_USE_VOLUME}" = "false" ]]; then
+  createDeployment
+else
+  createDeploymentVolume
+fi
 
 waitForDeploymentReady ${TNS} ${LDAP_DOMAIN}-ldap ${LDAP_WAIT_SECS}
 

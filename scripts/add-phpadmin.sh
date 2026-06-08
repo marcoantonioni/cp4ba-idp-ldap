@@ -86,7 +86,7 @@ resourceExist () {
 
 #-------------------------------
 extractCreateSecretsTls () {
-  log_msg "Create secrets"
+  log_info "Create secrets"
   oc get secrets -n ${SECRET_NAMESPACE} ${SECRET_NAME} -o jsonpath='{.data.tls\.crt}' 2>/dev/null | base64 -d > ./tls.cert
   oc get secrets -n ${SECRET_NAMESPACE} ${SECRET_NAME} -o jsonpath='{.data.tls\.key}' 2>/dev/null | base64 -d > ./tls.key
 
@@ -95,13 +95,11 @@ extractCreateSecretsTls () {
 
   resourceExist secret phpadminldap-${LDAP_DOMAIN}-root-ca ${SECRET_NAMESPACE}
   if [ $? -eq 0 ]; then
-    # log_msg "oc create secret -n ${SECRET_NAMESPACE} tls phpadminldap-${LDAP_DOMAIN}-root-ca --cert=./tls.cert --key=./tls.key"
     oc create secret -n ${SECRET_NAMESPACE} tls phpadminldap-${LDAP_DOMAIN}-root-ca --cert=./tls.cert --key=./tls.key 2>/dev/null 1>/dev/null
   fi
 
   resourceExist secret phpadminldap-${LDAP_DOMAIN}-prereq-ext ${SECRET_NAMESPACE}
   if [ $? -eq 0 ]; then
-    # log_msg "oc create secret -n ${SECRET_NAMESPACE} tls phpadminldap-${LDAP_DOMAIN}-prereq-ext --cert=./common-web-ui-cert.cert --key=./common-web-ui-cert.key"
     oc create secret -n ${SECRET_NAMESPACE} tls phpadminldap-${LDAP_DOMAIN}-prereq-ext --cert=./common-web-ui-cert.cert --key=./common-web-ui-cert.key 2>/dev/null 1>/dev/null
   fi
 
@@ -109,7 +107,7 @@ extractCreateSecretsTls () {
 }
 
 deployPHPAdmin () {
-  log_msg "Deploy phpldapadmin"
+  log_info "Deploy phpldapadmin"
 #-------------------------------------
 # set image name and tag
 PHPLDAPADMIN_IMAGE="cp.icr.io/cp/cp4a/demo/phpldapadmin"
@@ -345,7 +343,7 @@ deployPHPAdmin
 PHPADMIN_USER="cn=admin,${LDAP_FULL_DOMAIN}"
 PHPADMIN_PASSWORD=$(oc -n ${SECRET_NAMESPACE} get secret ${LDAP_DOMAIN}-secret -o jsonpath='{.data.LDAP_ADMIN_PASSWORD}' | base64 -d)
 
-log_msg "Installation completed"
+log_info "Installation completed"
 
-log_msg "${_CLR_GREEN}php-admin host: '${_CLR_YELLOW}https://${PHP_FQDN}${_CLR_GREEN}'${_CLR_NC}"
-log_msg "${_CLR_GREEN}php-admin user '${_CLR_YELLOW}${PHPADMIN_USER}${_CLR_GREEN}' password '${_CLR_YELLOW}${PHPADMIN_PASSWORD}${_CLR_GREEN}'${_CLR_NC}"
+log_info "${_CLR_GREEN}php-admin host: '${_CLR_YELLOW}https://${PHP_FQDN}${_CLR_GREEN}'${_CLR_NC}"
+log_info "${_CLR_GREEN}php-admin user '${_CLR_YELLOW}${PHPADMIN_USER}${_CLR_GREEN}' password '${_CLR_YELLOW}${PHPADMIN_PASSWORD}${_CLR_GREEN}'${_CLR_NC}"
