@@ -194,22 +194,19 @@ loadUsersFromSecret () {
 loadUsersFromFile () {
   log_info "${_CLR_GREEN}Loading users from file '${_CLR_YELLOW}$1${_CLR_GREEN}'${_CLR_NC}"
 
-  if [[ -f $1 ]]; then
-
-    IFS=$'\n'
-    LIST_OF_USERS=($(cat ${USERS_FILE} | sed 's/\r//g'))
-
-    # _FNAME="${_INST_TMP_FOLDER}/pak-onboard-users-$USER-$RANDOM"
-    # LIST_OF_USERS=$(cat $1)
-    # # because sed -i & Darwin...
-    # _FNAME="${_INST_TMP_FOLDER}/pak-onboard-users-$USER-$RANDOM"
-    # _FNAME2="${_FNAME}-transformed"
-    # echo $LIST_OF_USERS > ${_FNAME}
-    # #sed 's/ /+/g' -i ${_FNAME}
-    # cat ${_FNAME} | sed 's/ /+/g' > ${_FNAME2}    
-    # LIST_OF_USERS=$(cat ${_FNAME2})
-    # rm ${_FNAME} 2>/dev/null
-    # rm ${_FNAME2} 2>/dev/null
+  if [[ -f $1 ]];
+  then
+    _FNAME="${_INST_TMP_FOLDER}/pak-onboard-users-$USER-$RANDOM"
+    LIST_OF_USERS=$(cat $1)
+    # because sed -i & Darwin...
+    _FNAME="${_INST_TMP_FOLDER}/pak-onboard-users-$USER-$RANDOM"
+    _FNAME2="${_FNAME}-transformed"
+    echo $LIST_OF_USERS > ${_FNAME}
+    #sed 's/ /+/g' -i ${_FNAME}
+    cat ${_FNAME} | sed 's/ /+/g' > ${_FNAME2}    
+    LIST_OF_USERS=$(cat ${_FNAME2})
+    rm ${_FNAME} 2>/dev/null
+    rm ${_FNAME2} 2>/dev/null
   else
       log_error "ERROR Users file '$1' not found !!!"
       exit 1
@@ -222,29 +219,17 @@ loadUsersFromFile () {
 
 onboardUsersAdd () {
 
-  #IFS="+" read -ra ALL_USERS <<< "$LIST_OF_USERS"  
-  ALL_USERS=()
-  for user in "${LIST_OF_USERS[@]}"; do
-    ALL_USERS+=("$user")
-    #echo "adding: $user"
-  done
-
+  IFS="+" read -ra ALL_USERS <<< "$LIST_OF_USERS"  
   tot_users=${#ALL_USERS[@]}
-
-  log_info "Adding $tot_users users..."
-
   UPDATED_LIST=""
 
   _ADMINS=()
   if [[ ! -z "${LDAP_ADMINS}" ]]; then
     IFS=',' read -a _ADMINS <<< "${LDAP_ADMINS}"
   fi
-  
-  _usersChunk=50
-  counter=0
+
   for _USR in "${ALL_USERS[@]}";
   do
-  
     isAdmin=0
     for admin in "${_ADMINS[@]}"; do
       admin=$(echo $admin | tr -d ' ')
@@ -261,65 +246,37 @@ onboardUsersAdd () {
       USER_RECORD="${USER_RECORD},"
       UPDATED_LIST=${UPDATED_LIST}${USER_RECORD}
     fi
-    counter=$((counter + 1))
-
-    if [[ $counter -ge $_usersChunk ]]; then
-      LIST_OF_RECORDS=$( echo ${UPDATED_LIST} | sed 's/.$//g')
-
-      if [[ ! -z "${LIST_OF_RECORDS}" ]]; then
-        log_info "${_CLR_GREEN}Adding chunk of '${_CLR_YELLOW}$counter${_CLR_GREEN}' users...${_CLR_NC}"
-
-        _DATA='['${LIST_OF_RECORDS}']'
-
-        #echo -e $_DATA | jq .
-
-        RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -H 'Content-Type: application/json' \
-                    -d $_DATA -X POST "${PAK_HOST}/usermgmt/v1/user/bulk")
-
-        if [[ "${RESPONSE}" == *"error"* ]]; then
-          log_error "ERROR adding users"
-          echo "${RESPONSE}"
-        else
-          RES=$(echo $RESPONSE | jq ._messageCode_ | sed 's/"//g')
-          if [[ "${RES}" != "Success" ]]; then
-            _MSG=$(echo $RESPONSE | jq .message | sed 's/"//g')
-            echo "ERROR CODE [${RES}] - ERROR MSG [${_MSG}]"
-            echo "ERROR PAYLOAD: ${RESPONSE}"
-          fi
-        fi
-      fi
-      UPDATED_LIST=""
-      counter=0
-
-    fi
   done
+  LIST_OF_RECORDS=$( echo ${UPDATED_LIST} | sed 's/.$//g')
 
-  if [[ $counter -gt 0 ]]; then
-    LIST_OF_RECORDS=$( echo ${UPDATED_LIST} | sed 's/.$//g')
+  if [[ ! -z "${LIST_OF_RECORDS}" ]]; then
+    log_info "${_CLR_GREEN}Adding '${_CLR_YELLOW}$tot_users${_CLR_GREEN}' users...${_CLR_NC}"
 
-    if [[ ! -z "${LIST_OF_RECORDS}" ]]; then
-      log_info "${_CLR_GREEN}Adding last chunk of '${_CLR_YELLOW}$tot_users${_CLR_GREEN}' users...${_CLR_NC}"
+    _DATA='['${LIST_OF_RECORDS}']'
+    RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -H 'Content-Type: application/json' \
+                 -d $_DATA -X POST "${PAK_HOST}/usermgmt/v1/user/bulk")
 
-      _DATA='['${LIST_OF_RECORDS}']'
-      RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -H 'Content-Type: application/json' \
-                  -d $_DATA -X POST "${PAK_HOST}/usermgmt/v1/user/bulk")
-
-      if [[ "${RESPONSE}" == *"error"* ]]; then
-        log_error "ERROR adding users"
-        echo "${RESPONSE}"
-        exit 1
+    if [[ "${RESPONSE}" == *"error"* ]]; then
+      log_error "ERROR adding users"
+      echo "${RESPONSE}"
+      exit 1
+    else
+      RES=$(echo $RESPONSE | jq ._messageCode_ | sed 's/"//g')
+      if [[ "${RES}" = "Success" ]]; then
+        _MSG="${_CLR_GREEN}'${_CLR_YELLOW}"$(echo $RESPONSE | jq '.result | length')"${_CLR_GREEN}' Users operated in mode '${_CLR_YELLOW}add${_CLR_GREEN}'${_CLR_NC}"
+        log_info "$_MSG"
       else
-        RES=$(echo $RESPONSE | jq ._messageCode_ | sed 's/"//g')
-        if [[ "${RES}" = "Success" ]]; then
-          _MSG="${_CLR_GREEN}'${_CLR_YELLOW}"$(echo $RESPONSE | jq '.result | length')"${_CLR_GREEN}' Users operated in mode '${_CLR_YELLOW}add${_CLR_GREEN}'${_CLR_NC}"
-          log_info "$_MSG"
-        else
-          _MSG=$(echo $RESPONSE | jq .message | sed 's/"//g')
-          echo "ERROR CODE [${RES}] - ERROR MSG [${_MSG}]"
-          echo "ERROR PAYLOAD: ${RESPONSE}"
-        fi
+        _MSG=$(echo $RESPONSE | jq .message | sed 's/"//g')
+        echo "ERROR CODE [${RES}] - ERROR MSG [${_MSG}]"
+        echo "ERROR PAYLOAD: ${RESPONSE}"
       fi
     fi
+
+    #_ALL_USERS=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -X GET "${PAK_HOST}/usermgmt/v1/usermgmt/users?include_profile_picture=true&offset=0&limit=500&sort_order=DESC&sort_by=created_timestamp&include_users_count=true")  
+    #echo $_ALL_USERS | jq .
+
+  else
+    log_warning "No users to add."
   fi
 }
 
@@ -328,13 +285,7 @@ onboardUsersAdd () {
 # onboard users remove
 
 onboardUsersRemove () {
-  #IFS="+" read -ra ALL_USERS <<< "$LIST_OF_USERS"
-
-  ALL_USERS=()
-  for user in "${LIST_OF_USERS[@]}"; do
-    ALL_USERS+=("$user")
-    #echo "removing: $user"
-  done
+  IFS="+" read -ra ALL_USERS <<< "$LIST_OF_USERS"
 
   tot_users=${#ALL_USERS[@]}
 
@@ -343,20 +294,17 @@ onboardUsersRemove () {
 
     for _USR in "${ALL_USERS[@]}";
     do
-      if [[ "$_USR" != "cp4admin" && "$_USR" != "banadmin" && "$_USR" != "p8admin" ]]; then
-        RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' \
-                    -X DELETE "${PAK_HOST}/usermgmt/v1/user/${_USR}")
-        if [[ "${RESPONSE}" == *"exception"* ]]; then
-          _MSG="ERROR removing user '${_USR}' message: "$(echo "${RESPONSE}" | jq .exception)
-          log_error "$_MSG"
-        else
-          log_info "Removed user $_USR"
-        fi
-      else
-        log_info "Skip admin user $_USR"
+      RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' \
+                  -X DELETE "${PAK_HOST}/usermgmt/v1/user/${_USR}")
+      if [[ "${RESPONSE}" == *"exception"* ]]; then
+        _MSG="ERROR removing user '${_USR}' message: "$(echo "${RESPONSE}" | jq .exception)
+        log_error "$_MSG"
+        tot_users=$((tot_users-1))      
       fi
+
     done
     log_info "$tot_users Users operated in mode 'remove'"
+
   else
     log_warning "No users to remove."
   fi
