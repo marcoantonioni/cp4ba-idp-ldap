@@ -2,7 +2,7 @@
 
 Utilities for IBM Cloud Pak® for Business Automation
 
-<i>Last update: 2026-05-12</i>
+<i>Last update: 2026-6-08</i>
 
 This repository contains a series of examples and tools for creating and configuring a containerized LDAP server and configuring federated IDP in a IBM Cloud Pak deployed using Foundational services v4.x
 
@@ -143,6 +143,19 @@ Remember to restart the BAW server to also see the "Groups" carried by the new I
 
 # remove users from users file
 ./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -n target-namespace -e environment-namespace -o remove -u ../configs/file-of-users
+
+# onboard users list from file
+CFG_LDAP=../../cp4ba-installations/configs25.0.1/_cfg-production-ldap-domain-1000.properties
+TNS=cp4ba-baw-auth-bai-onedb-1000
+USERS_FILE=../../cp4ba-installations/configs25.0.1/file-of-users-1000
+./onboard-users.sh -p $CFG_LDAP -n ${TNS} -e ${TNS} -o add -u ${USERS_FILE}
+
+# remove users list from file
+CFG_LDAP=../../cp4ba-installations/configs25.0.1/_cfg-production-ldap-domain-1000.properties
+TNS=cp4ba-baw-auth-bai-onedb-1000
+USERS_FILE=../../cp4ba-installations/configs25.0.1/file-of-users-1000
+./onboard-users.sh -p $CFG_LDAP -n ${TNS} -e ${TNS} -o remove -u ${USERS_FILE}
+
 ```
 
 ## List Roles and Groups
