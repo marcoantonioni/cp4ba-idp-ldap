@@ -144,6 +144,20 @@ Remember to restart the BAW server to also see the "Groups" carried by the new I
 # remove users from users file
 ./scripts/onboard-users.sh -p ./configs/_cfg1-ldap-domain.properties -n target-namespace -e environment-namespace -o remove -u ../configs/file-of-users
 
+
+
+CFG_LDAP=../../cp4ba-installations/configs25.0.1/_cfg-production-ldap-domain.properties
+TNS=cp4ba-extdb-wfps-authoring-db
+TNS2=cp4ba-extdb-wfps-authoring
+./onboard-users.sh -p ${CFG_LDAP} -n ${TNS} -e ${TNS2} -o add -s
+
+CFG_LDAP=../../cp4ba-installations/configs25.0.1/_cfg-production-ldap-domain.properties
+TNS=cp4ba-extdb-wfps-authoring-db
+TNS2=cp4ba-extdb-wfps-authoring
+./onboard-users.sh -p ${CFG_LDAP} -n ${TNS} -e ${TNS2} -o remove -s
+
+
+
 # onboard users list from file
 CFG_LDAP=../../cp4ba-installations/configs25.0.1/_cfg-production-ldap-domain-1000.properties
 TNS=cp4ba-baw-auth-bai-onedb-1000
@@ -155,6 +169,12 @@ CFG_LDAP=../../cp4ba-installations/configs25.0.1/_cfg-production-ldap-domain-100
 TNS=cp4ba-baw-auth-bai-onedb-1000
 USERS_FILE=../../cp4ba-installations/configs25.0.1/file-of-users-1000
 ./onboard-users.sh -p $CFG_LDAP -n ${TNS} -e ${TNS} -o remove -u ${USERS_FILE}
+
+
+CFG_LDAP=../../cp4ba-installations/configs25.0.1/_cfg-production-ldap-domain-1000.properties
+TNS=cp4ba-extdb-wfps-authoring
+USERS_FILE=../../cp4ba-installations/configs25.0.1/file-of-users-100
+./onboard-users.sh -p $CFG_LDAP -n ${TNS} -e ${TNS} -o add -u ${USERS_FILE}
 
 ```
 

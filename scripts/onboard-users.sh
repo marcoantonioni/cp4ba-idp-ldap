@@ -222,12 +222,15 @@ loadUsersFromFile () {
 
 onboardUsersAdd () {
 
-  #IFS="+" read -ra ALL_USERS <<< "$LIST_OF_USERS"  
   ALL_USERS=()
-  for user in "${LIST_OF_USERS[@]}"; do
-    ALL_USERS+=("$user")
-    #echo "adding: $user"
-  done
+  if [[ "${USERS_SECRET}" = "true" ]]; then
+    IFS="+" read -ra ALL_USERS <<< "$LIST_OF_USERS"  
+  else
+    for user in "${LIST_OF_USERS[@]}"; do
+      ALL_USERS+=("$user")
+      #echo "adding: $user"
+    done
+  fi
 
   tot_users=${#ALL_USERS[@]}
 
@@ -328,13 +331,16 @@ onboardUsersAdd () {
 # onboard users remove
 
 onboardUsersRemove () {
-  #IFS="+" read -ra ALL_USERS <<< "$LIST_OF_USERS"
 
   ALL_USERS=()
-  for user in "${LIST_OF_USERS[@]}"; do
-    ALL_USERS+=("$user")
-    #echo "removing: $user"
-  done
+  if [[ "${USERS_SECRET}" = "true" ]]; then
+    IFS="+" read -ra ALL_USERS <<< "$LIST_OF_USERS"  
+  else
+    for user in "${LIST_OF_USERS[@]}"; do
+      ALL_USERS+=("$user")
+      #echo "removing: $user"
+    done
+  fi
 
   tot_users=${#ALL_USERS[@]}
 
