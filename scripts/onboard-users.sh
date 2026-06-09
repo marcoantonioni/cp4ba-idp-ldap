@@ -301,7 +301,7 @@ onboardUsersAdd () {
     LIST_OF_RECORDS=$( echo ${UPDATED_LIST} | sed 's/.$//g')
 
     if [[ ! -z "${LIST_OF_RECORDS}" ]]; then
-      log_info "${_CLR_GREEN}Adding last chunk of '${_CLR_YELLOW}$tot_users${_CLR_GREEN}' users...${_CLR_NC}"
+      log_info "${_CLR_GREEN}Adding last chunk of '${_CLR_YELLOW}$counter${_CLR_GREEN}' users...${_CLR_NC}"
 
       _DATA='['${LIST_OF_RECORDS}']'
       RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -H 'Content-Type: application/json' \
@@ -314,8 +314,10 @@ onboardUsersAdd () {
       else
         RES=$(echo $RESPONSE | jq ._messageCode_ | sed 's/"//g')
         if [[ "${RES}" = "Success" ]]; then
-          _MSG="${_CLR_GREEN}'${_CLR_YELLOW}"$(echo $RESPONSE | jq '.result | length')"${_CLR_GREEN}' Users operated in mode '${_CLR_YELLOW}add${_CLR_GREEN}'${_CLR_NC}"
-          log_info "$_MSG"
+          #_MSG="${_CLR_GREEN}'${_CLR_YELLOW}"$(echo $RESPONSE | jq '.result | length')"${_CLR_GREEN}' Users operated in mode '${_CLR_YELLOW}add${_CLR_GREEN}'${_CLR_NC}"          
+          #log_info "$_MSG"
+          
+          log_info "${_CLR_GREEN}'${_CLR_YELLOW}${tot_users}${_CLR_GREEN}' Users operated in mode '${_CLR_YELLOW}add${_CLR_GREEN}'${_CLR_NC}"          
         else
           _MSG=$(echo $RESPONSE | jq .message | sed 's/"//g')
           echo "ERROR CODE [${RES}] - ERROR MSG [${_MSG}]"
