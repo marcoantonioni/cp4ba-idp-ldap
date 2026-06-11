@@ -158,7 +158,6 @@ TNS2=cp4ba-extdb-wfps-authoring
 ./onboard-users.sh -p ${CFG_LDAP} -n ${TNS} -e ${TNS2} -o remove -s
 
 
-
 # onboard users list from file
 CFG_LDAP=../../cp4ba-installations/configs25.0.1/_cfg-production-ldap-domain-1000.properties
 TNS=cp4ba-baw-auth-bai-onedb-1000
@@ -178,6 +177,12 @@ USERS_FILE=../../cp4ba-installations/configs25.0.1/file-of-users-100
 ./onboard-users.sh -p $CFG_LDAP -n ${TNS} -e ${TNS} -o add -u ${USERS_FILE}
 
 ```
+
+## How to generate file of users from an LDIF configuration file
+```
+cat ./_cfg100-ldap-domain.ldif | grep "uid:" | sed 's/uid: //g' > ./file-of-users-100
+```
+
 
 ## List Roles and Groups
 
