@@ -260,7 +260,7 @@ createDeployment() {
     counter=$((counter + 2))
   done
 
-  log_info "${_CLR_GREEN}Creating deployment '${_CLR_YELLOW}${LDAP_DOMAIN}-ldap${_CLR_GREEN}' using LDIF configuration via Secret '${_CLR_YELLOW}${LDAP_DOMAIN}-customldif${_CLR_GREEN}'${_CLR_NC}"
+  log_info "${_CLR_GREEN}Creating deployment '${_CLR_YELLOW}${LDAP_DOMAIN}-ldap${_CLR_GREEN}' using LDIF configuration via secret '${_CLR_YELLOW}${LDAP_DOMAIN}-customldif${_CLR_GREEN}'${_CLR_NC}"
 
 cat << EOF | oc create -f - 2> /dev/null 1> /dev/null
 kind: Deployment
