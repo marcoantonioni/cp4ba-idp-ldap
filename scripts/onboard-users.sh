@@ -150,16 +150,34 @@ getCommonValues () {
   ADMIN_USERNAME=$(oc get secret platform-auth-idp-credentials -n ${_ENVTNS} -o jsonpath='{.data.admin_username}' | base64 -d)
   ADMIN_PASSW=$(oc get secret platform-auth-idp-credentials -n ${_ENVTNS} -o jsonpath='{.data.admin_password}' | base64 -d)
 
+  if [[ -z "${ADMIN_USERNAME}" || -z "${ADMIN_PASSW}" ]]; then
+    log_error "Cannot obtain cpadmin credentials."
+    exit 1
+  fi
+
   # get admin URL
   CONSOLE_HOST="https://"$(oc get route -n ${_ENVTNS} ${_ROUTE_NAME} -o jsonpath="{.spec.host}")
   PAK_HOST="https://"$(oc get route -n ${_ENVTNS} cpd -o jsonpath="{.spec.host}")
+
+  if [[ -z "${CONSOLE_HOST}" || -z "${PAK_HOST}" ]]; then
+    log_error "Cannot obtain pak console url."
+    exit 1
+  fi
 
   # get IAM access token
   IAM_ACCESS_TK=$(curl -sk -X POST -H "Content-Type: application/x-www-form-urlencoded;charset=UTF-8" \
         -d "grant_type=password&username=${ADMIN_USERNAME}&password=${ADMIN_PASSW}&scope=openid" \
         ${CONSOLE_HOST}/idprovider/v1/auth/identitytoken | jq -r .access_token)
+  if [[ -z "${IAM_ACCESS_TK}" ]]; then
+    log_error "Cannot obtain IAM access token."
+    exit 1
+  fi
 
   ZEN_TK=$(curl -sk "${PAK_HOST}/v1/preauth/validateAuth" -H "username:${ADMIN_USERNAME}" -H "iam-token: ${IAM_ACCESS_TK}" | jq -r .accessToken)
+  if [[ -z "${ZEN_TK}" ]]; then
+    log_error "Cannot obtain ZEN access token."
+    exit 1
+  fi
 
   log_info "${_CLR_GREEN}Pak console: '${_CLR_YELLOW}${CONSOLE_HOST}${_CLR_GREEN}'${_CLR_NC}"
   log_info "${_CLR_GREEN}Pak cpd console: '${_CLR_YELLOW}${PAK_HOST}${_CLR_GREEN}'${_CLR_NC}"
