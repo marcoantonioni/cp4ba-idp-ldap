@@ -145,6 +145,7 @@ getCommonValues () {
 
   waitForResourceCreated ${_ENVTNS} "secret" "platform-auth-idp-credentials" 10
   waitForResourceCreated ${_ENVTNS} "route" "cpd" 10
+  waitForResourceCreated ${_ENVTNS} "route" "${_ROUTE_NAME}" 10
 
   # get pak admin username / password
   ADMIN_USERNAME=$(oc get secret platform-auth-idp-credentials -n ${_ENVTNS} -o jsonpath='{.data.admin_username}' | base64 -d)

@@ -2,12 +2,13 @@
 
 Utilities for IBM Cloud Pak® for Business Automation
 
-<i>Last update: 2026-07-16</i>
+<i>Last update: 2026-10-13</i>
 
 This repository contains a series of examples and tools for creating and configuring a containerized LDAP server and configuring federated IDP in a IBM Cloud Pak deployed using Foundational services v4.x
 
 ## Change Log
 
+2026-10-13: Added wait for platform-id-provider route
 2026-05-12: Added cp4ba-logger dependency
 2026-05-05: Added support for db and ldap in different namespaces (onboard-users.sh)
 2025-03-08: Fixed createIDPConfiguration (ldap_groupidmap)
