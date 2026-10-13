@@ -91,8 +91,8 @@ LDAP_BINDPASSWORD="..."
 # OpenLDAP type values (change values as needed)
 LDAP_TYPE="Custom"
 LDAP_USERFILTER="(&(cn=%v)(objectclass=person))" 
-LDAP_GROUPFILTER="(&(cn=%v)(|(objectclass=groupOfNames)(objectclass=groupOfUniqueNames)(objectclass=groupOfURLs)))"
-LDAP_USERIDMAP="*:uid"
+LDAP_GROUPFILTER="(&(cn=%v)(objectclass=groupOfNames))"
+LDAP_USERIDMAP="*:cn"
 LDAP_GROUPIDMAP="*:cn"
 LDAP_GROUPMEMBERIDMAP="memberof:member"
 

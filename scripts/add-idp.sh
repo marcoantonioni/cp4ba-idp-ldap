@@ -71,7 +71,8 @@ usage () {
   echo "usage: $_me
     -c full-path-to-environment-config-file
     -p full-path-to-ldap-config-file
-    -f (optional)force-installation"
+    -f (optional)force-installation
+    -s (optional)configure-shim [true|false]"
 }
 
 #-------------------------------
@@ -176,10 +177,54 @@ echo '{
 
 configSCIM () {
 
-  SCIM_DATA='{"idp_id":"'${IDP_NAME}'","idp_type":"ldap","user":{"id":"dn","userName":"uid","principalName":"uid","displayName":"cn","givenName":"cn","familyName":"sn","fullName":"cn","externalId":"dn","phoneNumbers":[{"value":"mobile","type":"mobile"},{"value":"telephoneNumber","type":"work"}],"objectClass":"person","groups":"memberOf"},"group":{"id":"dn","name":"cn","principalName":"cn","displayName":"cn","externalId":"dn","created":"createTimestamp","lastModified":"modifyTimestamp","objectClass":"groupOfNames","members":"member"}}'
+  SCIM_DATA='{
+    "idp_id": "'${IDP_NAME}'",
+    "idp_type": "ldap",
+    "user": {
+      "id": "uid",
+      "name": {
+        "fullName": "cn",
+        "givenName": "cn",
+        "familyName": "sn"
+      },
+      "emails": "mail",
+      "groups": "member",
+      "created": "createTimestamp",
+      "userName": "cn",
+      "externalId": "dn",
+      "displayName": "cn",
+      "objectClass": "organizationalPerson",
+      "lastModified": "modifyTimestamp",
+      "phoneNumbers": [
+        {
+          "type": "mobile",
+          "value": "mobile"
+        },
+        {
+          "type": "work",
+          "value": "telephoneNumber"
+        }
+      ],
+      "principalName": "cn"
+    },
+    "group": {
+      "id": "cn",
+      "name": "cn",
+      "created": "createTimestamp",
+      "members": "member",
+      "externalId": "dn",
+      "displayName": "cn",
+      "objectClass": "groupOfNames",
+      "lastModified": "modifyTimestamp",
+      "principalName": "cn"
+    }
+  }'
 
-  RESPONSE=$(curl -sk -X POST -H "Authorization: Bearer ${IAM_ACCESS_TK}" -H 'Content-Type: application/json' \
-              -d $SCIM_DATA "${CONSOLE_HOST}/idmgmt/identity/api/v1/scim/attributemappings" | jq .)
+
+# https://www.ibm.com/docs/en/cloud-paks/foundational-services/4.19.x?topic=users-updating-scim-ldap-attributes-mapping
+
+  RESPONSE=$(curl -sk -X PUT -H "Authorization: Bearer ${IAM_ACCESS_TK}" -H 'Content-Type: application/json' \
+              -d "$SCIM_DATA" "${CONSOLE_HOST}/idmgmt/identity/api/v1/scim/attributemappings/${IDP_NAME}")
 
   if [[ "${RESPONSE}" == *"error"* ]]; then
     log_error "ERROR configuring SCIM attributes for [${IDP_NAME}]"
@@ -214,7 +259,7 @@ createIdp () {
     exit 1
   else
     configSCIM
-    log_info "${_CLR_GREEN}IDP [${_CLR_YELLOW}${IDP_NAME}${_CLR_GREEN}] configured.${_CLR_NC}"    
+    log_info "${_CLR_GREEN}IDP [${_CLR_YELLOW}${IDP_NAME}${_CLR_GREEN}] configured.${_CLR_NC}"
   fi
 
   rm ./${IDP_NAME}.json 
