@@ -131,7 +131,6 @@ getCommonValues () {
 
   log_info "${_CLR_GREEN}Pak console: ${_CLR_YELLOW}${CONSOLE_HOST}${_CLR_NC}"
   log_info "${_CLR_GREEN}Pak administrator: ${_CLR_YELLOW}${ADMIN_USERNAME} / ${ADMIN_PASSW}${_CLR_NC}"
-  log_msg ""
 }
 
 #-------------------------------
@@ -260,7 +259,6 @@ getIDPInfos () {
 #-------------------------------
 # get list of configured IDP
 showIDPList () {
-  echo ""
   echo -n "IDP list: "
   echo ${IDP_NAMES}
 }
@@ -322,7 +320,6 @@ checkParams
 log_msg "======================================================================"
 log_msg "Configuring IDP"
 log_msg "======================================================================"
-log_msg ""
 
 log_info "${_CLR_GREEN}IDP name [${_CLR_YELLOW}${IDP_NAME}${_CLR_GREEN}] namespace [${_CLR_YELLOW}${TNS}${_CLR_GREEN}]${_CLR_NC}"
 
