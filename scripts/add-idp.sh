@@ -9,6 +9,9 @@ _me=$(basename "$0")
 PROPS_FILE=""
 FORCE_INST=false
 _CFG=""
+_VIEW_IDP_DATA=""
+_UPDATE_SCIM_DATA=""
+
 
 #--------------------------------------------------------
 _CLR_RED="\033[0;31m"   #'0;31' is Red's ANSI color code
@@ -57,12 +60,14 @@ if [[ -z "${CP4BA_LOG_BACKUP_COUNT}" ]]; then
   export CP4BA_LOG_BACKUP_COUNT=5
 fi
 
-while getopts p:c:f flag
+while getopts p:c:v:s:f flag
 do
     case "${flag}" in
         f) FORCE_INST=true;;
         p) PROPS_FILE=${OPTARG};;
         c) _CFG=${OPTARG};;
+        v) _VIEW_IDP_DATA=${OPTARG};;
+        s) _UPDATE_SCIM_DATA=${OPTARG};;
     esac
 done
 
@@ -172,13 +177,9 @@ echo '{
 
 }
 
-#-------------------------------
-# Add SCIM attributes
-
-configSCIM () {
-
+setSCIMData () {
   SCIM_DATA='{
-    "idp_id": "'${IDP_NAME}'",
+    "idp_id": "'$1'",
     "idp_type": "ldap",
     "user": {
       "id": "uid",
@@ -219,17 +220,35 @@ configSCIM () {
       "principalName": "cn"
     }
   }'
+}
 
+#-------------------------------
+# Add SCIM attributes
+
+configSCIM () {
 
 # https://www.ibm.com/docs/en/cloud-paks/foundational-services/4.19.x?topic=users-updating-scim-ldap-attributes-mapping
 
-  _VERB="POST"
-  if [[ "${FORCE_INST}" = "true" ]]; then
+  setSCIMData "$1"
+
+  _OLD_SCIM_DATA=$(curl -sk -X GET -H "Authorization: Bearer ${IAM_ACCESS_TK}" -H 'Content-Type: application/json' \
+              "${CONSOLE_HOST}/idmgmt/identity/api/v1/scim/attributemappings/${IDP_NAME}" )
+
+  if [[ "${_OLD_SCIM_DATA}" = "{}" ]]; then
+    _VERB="POST"
+    _LAST_SEGMENT=""
+  else
     _VERB="PUT"
-  fi 
+    _LAST_SEGMENT="/${IDP_NAME}"
+  fi
+
   log_info "Updating SCIM configuration for IDP [${_CLR_YELLOW}${IDP_NAME}${_CLR_GREEN}]"
+
+  #curl -vk -X ${_VERB} -H "Authorization: Bearer ${IAM_ACCESS_TK}" -H 'Content-Type: application/json' \
+  #            -d "$SCIM_DATA" "${CONSOLE_HOST}/idmgmt/identity/api/v1/scim/attributemappings${_LAST_SEGMENT}"  
+
   RESPONSE=$(curl -sk -X ${_VERB} -H "Authorization: Bearer ${IAM_ACCESS_TK}" -H 'Content-Type: application/json' \
-              -d "$SCIM_DATA" "${CONSOLE_HOST}/idmgmt/identity/api/v1/scim/attributemappings/${IDP_NAME}")
+              -d "$SCIM_DATA" "${CONSOLE_HOST}/idmgmt/identity/api/v1/scim/attributemappings${_LAST_SEGMENT}")
 
   if [[ "${RESPONSE}" == *"error"* ]]; then
     log_error "ERROR configuring SCIM attributes for [${IDP_NAME}]"
@@ -280,7 +299,7 @@ createIdp () {
       fi
     done
 
-    configSCIM
+    configSCIM "${IDP_NAME}"
     log_info "${_CLR_GREEN}IDP [${_CLR_YELLOW}${IDP_NAME}${_CLR_GREEN}] configured.${_CLR_NC}"
   fi
 
@@ -321,6 +340,19 @@ deleteIDP () {
 getIDPInfos () {
   IDP_LIST=$(curl -sk -X GET "${CONSOLE_HOST}/idprovider/v3/auth/idsource" -H "Authorization: Bearer ${IAM_ACCESS_TK}")
   IDP_NAMES=$(echo ${IDP_LIST} | jq .idp[].name | sed 's/"//g')
+}
+
+showIDPData () {
+  echo "Showing data of: $1"
+  curl -sk -X GET -H "Authorization: Bearer ${IAM_ACCESS_TK}" -H 'Content-Type: application/json' \
+              "${CONSOLE_HOST}/idmgmt/identity/api/v1/scim/attributemappings/$1" | jq .
+
+}
+
+updateSCIM () {
+  IDP_NAME=$1
+  FORCE_INST="true"
+  configSCIM "${IDP_NAME}"
 }
 
 #-------------------------------
@@ -392,6 +424,17 @@ log_info "${_CLR_GREEN}IDP name [${_CLR_YELLOW}${IDP_NAME}${_CLR_GREEN}] namespa
 
 getCommonValues
 getIDPInfos
+
+if [[ ! -z "${_VIEW_IDP_DATA}" ]]; then
+  showIDPData "${_VIEW_IDP_DATA}"
+  exit
+fi
+
+if [[ ! -z "${_UPDATE_SCIM_DATA}" ]]; then
+  updateSCIM "${_UPDATE_SCIM_DATA}"
+  exit
+fi
+
 verifyIDPAlreadyPresent
 createIdp
 showIDPList
