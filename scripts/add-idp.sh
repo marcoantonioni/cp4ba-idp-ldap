@@ -359,8 +359,9 @@ updateSCIM () {
 #-------------------------------
 # get list of configured IDP
 showIDPList () {
-  echo -e "${_CLR_GREEN}IDP list: "
-  echo -e "${_CLR_YELLOW}${IDP_NAMES}${_CLR_GREEN}"
+  echo -e -n "${_CLR_GREEN}IDP list: ${_CLR_YELLOW}"
+  echo -n "${IDP_NAMES}"
+  echo -e "${_CLR_GREEN}"
 }
 
 #-------------------------------
@@ -438,6 +439,6 @@ fi
 
 verifyIDPAlreadyPresent
 createIdp
-showIDPList
+# showIDPList
 log_warning "===>> !!! Remember to restart the BAW server to also see the 'Groups' carried by the new IDP."
 
