@@ -77,7 +77,8 @@ usage () {
     -c full-path-to-environment-config-file
     -p full-path-to-ldap-config-file
     -f (optional)force-installation
-    -s (optional)configure-shim [true|false]"
+    -s (configure-shim) idp-name
+    -v (view-idp-data) idp-name "   
 }
 
 #-------------------------------
