@@ -223,7 +223,12 @@ configSCIM () {
 
 # https://www.ibm.com/docs/en/cloud-paks/foundational-services/4.19.x?topic=users-updating-scim-ldap-attributes-mapping
 
-  RESPONSE=$(curl -sk -X PUT -H "Authorization: Bearer ${IAM_ACCESS_TK}" -H 'Content-Type: application/json' \
+  _VERB="POST"
+  if [[ "${FORCE_INST}" = "true" ]]; then
+    _VERB="PUT"
+  fi 
+  log_info "Updating SCIM configuration for IDP [${_CLR_YELLOW}${IDP_NAME}${_CLR_GREEN}]"
+  RESPONSE=$(curl -sk -X ${_VERB} -H "Authorization: Bearer ${IAM_ACCESS_TK}" -H 'Content-Type: application/json' \
               -d "$SCIM_DATA" "${CONSOLE_HOST}/idmgmt/identity/api/v1/scim/attributemappings/${IDP_NAME}")
 
   if [[ "${RESPONSE}" == *"error"* ]]; then
@@ -258,6 +263,23 @@ createIdp () {
     fi
     exit 1
   else
+
+    _loop=0
+    while [ true ]; do
+      getIDPInfos
+      if [[ "${IDP_NAMES}" == *"${IDP_NAME}"* ]]; then
+        log_info "IDP [${_CLR_YELLOW}${IDP_NAME}${_CLR_GREEN}] is ready."
+        break
+      else
+        sleep 1
+        ((_loop=_loop+1))
+        if [[ _loop -ge 60 ]]; then
+          log_error "IDP [${_CLR_YELLOW}${IDP_NAME}${_CLR_GREEN}] not created."  
+          exit 1
+        fi
+      fi
+    done
+
     configSCIM
     log_info "${_CLR_GREEN}IDP [${_CLR_YELLOW}${IDP_NAME}${_CLR_GREEN}] configured.${_CLR_NC}"
   fi
@@ -304,8 +326,8 @@ getIDPInfos () {
 #-------------------------------
 # get list of configured IDP
 showIDPList () {
-  echo -n "IDP list: "
-  echo ${IDP_NAMES}
+  echo -e "${_CLR_GREEN}IDP list: "
+  echo -e "${_CLR_YELLOW}${IDP_NAMES}${_CLR_GREEN}"
 }
 
 #-------------------------------
@@ -372,7 +394,6 @@ getCommonValues
 getIDPInfos
 verifyIDPAlreadyPresent
 createIdp
-getIDPInfos
 showIDPList
 log_warning "===>> !!! Remember to restart the BAW server to also see the 'Groups' carried by the new IDP."
 
