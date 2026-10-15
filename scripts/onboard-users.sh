@@ -433,7 +433,7 @@ if [[ "${_LIST_ROLES}" = "true" ]]; then
   log_msg ""
   log_info "Groups:"
   RESPONSE=$(curl -sk -H "Authorization: Bearer ${ZEN_TK}" -H 'accept: application/json' -H 'Content-Type: application/json' \
-              "${PAK_HOST}/usermgmt/v2/groups")
+              "${PAK_HOST}/usermgmt/v4/groups")
   echo $RESPONSE | jq .
 
   exit 0
