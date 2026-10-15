@@ -190,6 +190,8 @@ USERS_FILE=../../cp4ba-installations/configs25.0.1/file-of-users-100
 ## How to generate file of users from an LDIF configuration file
 ```
 cat ./_cfg100-ldap-domain.ldif | grep "uid:" | sed 's/uid: //g' > ./file-of-users-100
+
+cat ../configs26/_cfg-production-ldap-domain-rpa.ldif | grep "uid:" | sed 's/uid: //g' > /tmp/file-of-users-rpa
 ```
 
 
