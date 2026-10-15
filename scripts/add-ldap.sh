@@ -1,13 +1,13 @@
 #!/bin/bash
 
 export PVC_LDIF_STORAGE_SIZE="20Mi"
-export PVC_NAME="pvc-openldap-ldif"
+export PVC_NAME=""
 export STORAGE_CLASS="ocs-external-storagecluster-cephfs"
 export POD_BB1="ldif-tool-1"
-export POD_BB2="ldif-tool-2"
 export MOUNT_PATH="/customldif"
-#export LDIF_FILENAME="ldap_user.ldif"
 export CTR_IMAGE="alpine:latest"
+export _SEC_LDAP_CREDS=""
+export _SEC_LDAP_LDIF=""
 
 #set -euo pipefail
 
@@ -190,19 +190,19 @@ createNamespace() {
 
 #-------------------------------
 createSecrets() {
-  resourceExist secret ${LDAP_DOMAIN}-secret ${TNS}
+  resourceExist secret ${_SEC_LDAP_CREDS} ${TNS}
   if [ $? -eq 0 ]; then
-    oc create secret generic -n ${TNS} ${LDAP_DOMAIN}-secret --from-literal=LDAP_ADMIN_PASSWORD=passw0rd --from-literal=LDAP_CONFIG_PASSWORD=passw0rd 2> /dev/null 1> /dev/null
+    oc create secret generic -n ${TNS} ${_SEC_LDAP_CREDS} --from-literal=LDAP_ADMIN_PASSWORD=passw0rd --from-literal=LDAP_CONFIG_PASSWORD=passw0rd 2> /dev/null 1> /dev/null
   fi
 
   if [[ -z "${CP4BA_INST_LDAP_USE_VOLUME}" ]] || [[ "${CP4BA_INST_LDAP_USE_VOLUME}" = "false" ]]; then
-    resourceExist secret ${LDAP_DOMAIN}-customldif ${TNS}
+    resourceExist secret ${_SEC_LDAP_LDIF} ${TNS}
     if [ $? -eq 0 ]; then
-      oc create secret generic -n ${TNS} ${LDAP_DOMAIN}-customldif --from-file=ldap_user.ldif=${LDAP_LDIF_NAME} 2> /dev/null 1> /dev/null
+      oc create secret generic -n ${TNS} ${_SEC_LDAP_LDIF} --from-file=ldap_user.ldif=${LDAP_LDIF_NAME} 2> /dev/null 1> /dev/null
     fi
   else
-    oc delete secret generic -n ${TNS} ${LDAP_DOMAIN}-customldif 2> /dev/null 1> /dev/null
-    oc create secret generic -n ${TNS} ${LDAP_DOMAIN}-customldif --from-literal=ldap_user.ldif='users from file' 2> /dev/null 1> /dev/null
+    oc delete secret generic -n ${TNS} ${_SEC_LDAP_LDIF} 2> /dev/null 1> /dev/null
+    oc create secret generic -n ${TNS} ${_SEC_LDAP_LDIF} --from-literal=ldap_user.ldif='users from file' 2> /dev/null 1> /dev/null
   fi
 }
 
@@ -772,13 +772,20 @@ waitForDeploymentReady () {
 #===============================
 
 log_msg "=============================================================="
-log_info "${_CLR_GREEN}Installing LDAP${_CLR_NC}"
 
 checkParams
 checkLDIFFile
 
+log_info "${_CLR_GREEN}Installing LDAP '${_CLR_YELLOW}${LDAP_DOMAIN}${_CLR_GREEN}'${_CLR_NC}"
+export PVC_NAME="pvc-${LDAP_DOMAIN}-ldif"
+
+export _SEC_LDAP_CREDS="${LDAP_DOMAIN}-secret"
+export _SEC_LDAP_LDIF="${LDAP_DOMAIN}-customldif"
+
+
 log_info "${_CLR_GREEN}Target namespace '${_CLR_YELLOW}${TNS}${_CLR_GREEN}'${_CLR_NC}"
 log_info "${_CLR_GREEN}Using LDIF file '${_CLR_YELLOW}${LDAP_LDIF_NAME}${_CLR_GREEN}'"
+log_info "${_CLR_GREEN}Creating secrets '${_CLR_YELLOW}${_SEC_LDAP_CREDS}${_CLR_GREEN}', '${_CLR_YELLOW}${_SEC_LDAP_LDIF}${_CLR_GREEN}'"
 
 createNamespace
 
@@ -806,4 +813,4 @@ log_info "Your LDAP service url is '${_CLR_YELLOW}"${LDAP_SVC_NAME}.${TNS}.svc.c
 log_debug "Full addresses"
 log_debug "  ${_CLR_YELLOW}ldap://${LDAP_SVC_NAME}.${TNS}.svc.cluster.local:389${_CLR_NC}"
 log_debug "  ${_CLR_YELLOW}ldaps://${LDAP_SVC_NAME}.${TNS}.svc.cluster.local:636${_CLR_NC}"
-log_info "LDAP installed."
+log_info "LDAP '${_CLR_YELLOW}${LDAP_DOMAIN}${_CLR_GREEN}' installed."

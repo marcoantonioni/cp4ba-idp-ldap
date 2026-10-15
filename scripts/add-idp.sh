@@ -327,7 +327,7 @@ deleteIDP () {
   else
     RESPONSE=$(curl -sk -X DELETE "${CONSOLE_HOST}/idprovider/v3/auth/idsource/"${IDP_UID} -H "Authorization: Bearer ${IAM_ACCESS_TK}")
     if [[ "${RESPONSE}" == *"success"* ]]; then
-      log_info "Deleted IDP "${IDP_NAME}" / "${IDP_UID}
+      log_info "Deleted IDP name '${_CLR_YELLOW}${IDP_NAME}${_CLR_GREEN}', IDP id '${_CLR_YELLOW}${IDP_UID}${_CLR_GREEN}'"
     else
       log_error "ERROR deleting ${IDP_NAME}"
       echo ${RESPONSE} | jq .

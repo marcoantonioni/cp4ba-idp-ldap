@@ -130,6 +130,14 @@ Remember to restart the BAW server to also see the "Groups" carried by the new I
 ./scripts/add-idp.sh -p ./configs/_cfg1-idp.properties -c environment-config-file.properties
 ```
 
+## Examples
+```
+export CP4BA_INST_NAMESPACE="cp4ba-rpa-34-managed"
+../../cp4ba-idp-ldap/scripts/add-ldap.sh -n $CP4BA_INST_NAMESPACE -c ../configs26/env1-runtime-rpa-managed.properties -p ../configs26/_cfg-production-ldap-domain-rpa.properties 
+../../cp4ba-idp-ldap/scripts/add-idp.sh -c ../configs26/env1-runtime-rpa-managed.properties -p ../configs26/_cfg-production-idp-rpa.properties 
+```
+
+
 ## Users onboarding into Pak environment commands
 ```
 # add users (list from ldif secret)
